@@ -1,16 +1,29 @@
 # PesaPal RDBMS Challenge
-## 🛠️ Built With
-
-- [Python](https://www.python.org/) - Core language
-- [Django](https://www.djangoproject.com/) - Web framework
-- [Django REST Framework](https://www.django-rest-framework.org/) - API toolkit
-- [Tailwind CSS](https://tailwindcss.com/) - Styling (optional)
-- [Swagger UI](https://swagger.io/tools/swagger-ui/) - API documentation
-
+![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
+![Django](https://img.shields.io/badge/Django-4.2-green)
+![REST-API](https://img.shields.io/badge/REST-API-✓-success)
+![Docs](https://img.shields.io/badge/Docs-Swagger-orange)
+![Tested](https://img.shields.io/badge/Tested-Postman-blueviolet)
+![License](https://img.shields.io/badge/License-MIT-yellow)
 
 A minimal relational database management system (RDBMS) with a Django web app demonstration.
 
-## 🧠 Design Decisions
+![PesaPal RDBMS ERD](./pesapal_erd.png)
+
+## 📋 Table of Contents
+- [Features](#-features)
+- [Architecture](#️-architecture)
+- [Quick Start](#-quick-start)
+- [Documentation](#-documentation)
+- [API Reference](#-api-reference)
+- [Database Design](#-database-design)
+- [Testing](#-testing)
+- [Contributing](#-contributing)
+- [License](#-license)
+
+--- 
+
+## Design Decisions
 
 - **Storage**: JSON chosen for readability and ease of debugging over binary formats
 - **Indexing**: Dictionary-based indexes for O(1) lookups on primary and unique keys
@@ -37,7 +50,9 @@ A minimal relational database management system (RDBMS) with a Django web app de
 - ✅ **Admin Interface**: Django admin with custom styling
 
 
-## Project Structure
+---
+
+## Architecture
 ```
 pesapal_rdbms/
 ├── rdbms/ # Custom RDBMS Engine (No external dependencies!)
@@ -66,6 +81,9 @@ pesapal_rdbms/
 └── README.md # This file
 ```
 
+---
+
+## Quick Start
 
 ## Installation & Setup
 
@@ -209,12 +227,9 @@ DELETE FROM users WHERE id = 2
 **✅ Web App Demonstration:**
 Full CRUD application using the custom RDBMS
 
+---
 
-
-## Database Schema Documentation:**
-
-```markdown
-## 💾 Database Design
+## Database Design
 
 ### Entity Relationship Diagram
 ![ERD Diagram](docs/erd.png)
@@ -252,13 +267,9 @@ CREATE INDEX idx_tasks_user_id ON tasks(user_id);
 CREATE INDEX idx_tasks_status ON tasks(status);
 CREATE INDEX idx_users_username ON users(username);
 ```
+---
 
-
-
-## Testing Section:**
-
-```markdown
-## 🧪 Testing
+## Testing 
 
 ### Running Tests
 ```bash
@@ -271,10 +282,9 @@ python -m pytest tests/test_database.py
 # Run with coverage report
 python -m pytest --cov=rdbms --cov-report=html
 ```
+---
 
-
-## Deployment Section:
-## 🚢 Deployment
+## Deployment
 
 ### Production Setup
 
@@ -285,24 +295,24 @@ export SECRET_KEY=your-secret-key-here
 export ALLOWED_HOSTS=yourdomain.com
 ```
 
-## 📚 Learn More
+## Learn More
 
 - [Django Documentation](https://docs.djangoproject.com/)
 - [Database Systems Concepts](https://www.db-book.com/)
 - [SQL Tutorial](https://www.w3schools.com/sql/)
 - [REST API Best Practices](https://restfulapi.net/)
 
-## 👥 Authors
+## Authors
 
 - **Your Name** - [GitHub](https://github.com/Dama5323) - [LinkedIn](https://linkedin.com/in/dama5323)
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - ALX Software Engineering Program
 - Inspired by SQLite and minimal database implementations
 - Thanks to all contributors and testers
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
