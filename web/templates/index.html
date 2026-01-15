@@ -1,0 +1,158 @@
+<!-- web/templates/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PesaPal RDBMS - Custom Database Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .api-endpoint {
+            background: #f8f9fa;
+            padding: 10px;
+            border-left: 4px solid #3498db;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        .btn {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 3px;
+            margin: 5px;
+        }
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        .feature-list li {
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .feature-list li:before {
+            content: "✓ ";
+            color: #27ae60;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 PesaPal Custom RDBMS Demonstration</h1>
+        <p>A fully functional relational database management system built from scratch</p>
+    </div>
+    
+    <div class="container">
+        <div class="card">
+            <h2>📊 Database Features</h2>
+            <ul class="feature-list">
+                <li>Table declaration with data types</li>
+                <li>CRUD operations (Create, Read, Update, Delete)</li>
+                <li>Primary & Unique key constraints</li>
+                <li>Basic indexing for faster lookups</li>
+                <li>JOIN operations (INNER, LEFT)</li>
+                <li>SQL-like interface with REPL</li>
+                <li>JSON file persistence</li>
+            </ul>
+        </div>
+        
+        <div class="card">
+            <h2>🔗 REST API Endpoints</h2>
+            
+            <h3>Users API</h3>
+            <div class="api-endpoint">GET /api/users/</div>
+            <div class="api-endpoint">POST /api/users/</div>
+            <div class="api-endpoint">GET /api/users/{id}/</div>
+            <div class="api-endpoint">PUT /api/users/{id}/</div>
+            <div class="api-endpoint">DELETE /api/users/{id}/</div>
+            
+            <h3>Tasks API</h3>
+            <div class="api-endpoint">GET /api/tasks/</div>
+            <div class="api-endpoint">POST /api/tasks/</div>
+            <div class="api-endpoint">GET /api/tasks/{id}/</div>
+            
+            <h3>Statistics</h3>
+            <div class="api-endpoint">GET /api/users/stats/</div>
+            <div class="api-endpoint">GET /api/tasks/stats/</div>
+        </div>
+        
+        <div class="card">
+            <h2>⚡ Quick Actions</h2>
+            <a href="/api/users/" class="btn" target="_blank">View Users</a>
+            <a href="/api/tasks/" class="btn" target="_blank">View Tasks</a>
+            <a href="/api/users/stats/" class="btn" target="_blank">View Stats</a>
+            <a href="/openapi/" class="btn" target="_blank">API Docs</a>
+            
+            <h3>Test SQL Execution</h3>
+            <form id="sqlForm">
+                <textarea id="sqlQuery" rows="3" style="width: 100%;" placeholder="SELECT * FROM users"></textarea>
+                <button type="submit" class="btn">Execute SQL</button>
+            </form>
+            <pre id="sqlResult" style="background: #f8f9fa; padding: 10px; display: none;"></pre>
+        </div>
+        
+        <div class="card">
+            <h2>🔧 Technical Details</h2>
+            <p><strong>Custom RDBMS Engine:</strong> Built from scratch in pure Python</p>
+            <p><strong>Web Framework:</strong> Django with Django REST Framework</p>
+            <p><strong>Storage:</strong> JSON files with automatic persistence</p>
+            <p><strong>Features Demonstrated:</strong></p>
+            <ul>
+                <li>✅ Table creation with constraints</li>
+                <li>✅ JOIN operations between tables</li>
+                <li>✅ RESTful API design</li>
+                <li>✅ Error handling and validation</li>
+                <li>✅ Real-time statistics</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('sqlForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const sql = document.getElementById('sqlQuery').value;
+            const resultEl = document.getElementById('sqlResult');
+            
+            try {
+                const response = await fetch('/api/tasks/sql/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ sql: sql })
+                });
+                
+                const data = await response.json();
+                resultEl.textContent = JSON.stringify(data, null, 2);
+                resultEl.style.display = 'block';
+            } catch (error) {
+                resultEl.textContent = 'Error: ' + error.message;
+                resultEl.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

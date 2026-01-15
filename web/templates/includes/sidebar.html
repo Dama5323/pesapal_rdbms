@@ -1,0 +1,52 @@
+<aside class="w-64 bg-white shadow-lg min-h-screen">
+    <div class="p-6">
+        <h2 class="text-lg font-bold text-gray-800 mb-4">Navigation</h2>
+        <nav class="space-y-2">
+            <a href="/" class="flex items-center p-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition {% if request.path == '/' %}bg-blue-50 text-blue-600{% endif %}">
+                <i class="fas fa-tachometer-alt mr-3"></i>
+                Dashboard
+            </a>
+            
+            <a href="/admin/" class="flex items-center p-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition">
+                <i class="fas fa-cog mr-3"></i>
+                Admin Interface
+            </a>
+            
+            <div class="pt-4">
+                <p class="text-sm font-semibold text-gray-500 uppercase mb-2">API Endpoints</p>
+                <a href="/api/users/" class="flex items-center p-3 text-gray-700 hover:bg-green-50 hover:text-green-600 rounded-lg transition">
+                    <i class="fas fa-users mr-3"></i>
+                    Users API
+                </a>
+                <a href="/api/tasks/" class="flex items-center p-3 text-gray-700 hover:bg-green-50 hover:text-green-600 rounded-lg transition">
+                    <i class="fas fa-tasks mr-3"></i>
+                    Tasks API
+                </a>
+                <a href="/api/tasks/sql/" class="flex items-center p-3 text-gray-700 hover:bg-green-50 hover:text-green-600 rounded-lg transition">
+                    <i class="fas fa-code mr-3"></i>
+                    SQL Executor
+                </a>
+                <a href="/api/docs/" class="flex items-center p-3 text-gray-700 hover:bg-green-50 hover:text-green-600 rounded-lg transition">
+                    <i class="fas fa-book mr-3"></i>
+                    API Documentation
+                </a>
+            </div>
+            
+            <div class="pt-4">
+                <p class="text-sm font-semibold text-gray-500 uppercase mb-2">System</p>
+                <a href="#" class="flex items-center p-3 text-gray-700 hover:bg-purple-50 hover:text-purple-600 rounded-lg transition">
+                    <i class="fas fa-database mr-3"></i>
+                    Database Status
+                </a>
+                <a href="#" class="flex items-center p-3 text-gray-700 hover:bg-purple-50 hover:text-purple-600 rounded-lg transition">
+                    <i class="fas fa-chart-bar mr-3"></i>
+                    Analytics
+                </a>
+                <a href="#" class="flex items-center p-3 text-gray-700 hover:bg-purple-50 hover:text-purple-600 rounded-lg transition">
+                    <i class="fas fa-cogs mr-3"></i>
+                    Settings
+                </a>
+            </div>
+        </nav>
+    </div>
+</aside>

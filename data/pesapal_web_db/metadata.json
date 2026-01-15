@@ -1,0 +1,35 @@
+{
+  "name": "pesapal_web_db",
+  "tables": {
+    "users": {
+      "columns": {
+        "id": "INTEGER",
+        "username": "TEXT",
+        "email": "TEXT",
+        "full_name": "TEXT",
+        "created_at": "DATETIME"
+      },
+      "primary_key": "id",
+      "unique_keys": [
+        "email",
+        "username"
+      ],
+      "row_count": 0
+    },
+    "tasks": {
+      "columns": {
+        "id": "INTEGER",
+        "title": "TEXT",
+        "description": "TEXT",
+        "user_id": "INTEGER",
+        "status": "TEXT",
+        "priority": "TEXT",
+        "created_at": "DATETIME",
+        "due_date": "DATETIME"
+      },
+      "primary_key": "id",
+      "unique_keys": [],
+      "row_count": 0
+    }
+  }
+}
