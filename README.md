@@ -11,15 +11,15 @@ A minimal relational database management system (RDBMS) with a Django web app de
 ![PesaPal RDBMS ERD](./pesapal_erd.png)
 
 ## 📋 Table of Contents
-- [Features](#-features)
-- [Architecture](#️-architecture)
-- [Quick Start](#-quick-start)
-- [Documentation](#-documentation)
-- [API Reference](#-api-reference)
-- [Database Design](#-database-design)
-- [Testing](#-testing)
-- [Contributing](#-contributing)
-- [License](#-license)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Quick Start](#quick-start)
+- [Documentation](#documentation)
+- [API Reference](#api-reference)
+- [Database Design](#database-design)
+- [Testing](#testing)
+- [Contributing](#contributing)
+- [License](#license)
 
 --- 
 
