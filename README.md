@@ -1,18 +1,14 @@
 # PesaPal RDBMS Challenge
+## 🛠️ Built With
+
+- [Python](https://www.python.org/) - Core language
+- [Django](https://www.djangoproject.com/) - Web framework
+- [Django REST Framework](https://www.django-rest-framework.org/) - API toolkit
+- [Tailwind CSS](https://tailwindcss.com/) - Styling (optional)
+- [Swagger UI](https://swagger.io/tools/swagger-ui/) - API documentation
+
 
 A minimal relational database management system (RDBMS) with a Django web app demonstration.
-
-## 📋 Table of Contents
-- [✨ Features](#-features)
-- [🏗️ Architecture](#️-architecture)
-- [🚀 Quick Start](#-quick-start)
-- [📖 Documentation](#-documentation)
-- [🔧 API Reference](#-api-reference)
-- [💾 Database Design](#-database-design)
-- [🧪 Testing](#-testing)
-- [🤝 Contributing](#-contributing)
-- [📄 License](#-license)
-
 
 ## 🧠 Design Decisions
 
@@ -295,14 +291,6 @@ export ALLOWED_HOSTS=yourdomain.com
 - [Database Systems Concepts](https://www.db-book.com/)
 - [SQL Tutorial](https://www.w3schools.com/sql/)
 - [REST API Best Practices](https://restfulapi.net/)
-
-## 🛠️ Built With
-
-- [Python](https://www.python.org/) - Core language
-- [Django](https://www.djangoproject.com/) - Web framework
-- [Django REST Framework](https://www.django-rest-framework.org/) - API toolkit
-- [Tailwind CSS](https://tailwindcss.com/) - Styling (optional)
-- [Swagger UI](https://swagger.io/tools/swagger-ui/) - API documentation
 
 ## 👥 Authors
 
