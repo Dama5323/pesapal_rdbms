@@ -1,159 +1,161 @@
-# pesapal_rdbms/services.py  (CREATE THIS IN PROJECT ROOT)
-"""
-Shared RDBMS service for Django apps
-"""
-import sys
 import os
+import sys
+from typing import Dict, List, Any, Optional
 
-# Add paths
-project_root = os.path.dirname(os.path.abspath(__file__))
-rdbms_path = os.path.join(project_root, 'rdbms')
+# Add the rdbms module to path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-for path in [project_root, rdbms_path]:
-    if path not in sys.path:
-        sys.path.insert(0, path)
+from rdbms import Database
 
-print(f"Project root: {project_root}")
-print(f"RDBMS path: {rdbms_path}")
+class RDBMSService:
+    """Service layer to connect Django with custom RDBMS"""
+    
+    _instance = None
+    _db = None
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(RDBMSService, cls).__new__(cls)
+            cls._instance._initialize()
+        return cls._instance
+    
+    def _initialize(self):
+        """Initialize the database connection"""
+        # Use a dedicated database for web app
+        self._db = Database('pesapal_web')
+        
+        # Ensure tables exist
+        self._ensure_tables()
+    
+    def _ensure_tables(self):
+        """Ensure required tables exist"""
+        # Users table
+        if 'users' not in self._db.tables:
+            self._db.create_table('users', {
+                'id': 'INTEGER',
+                'username': 'TEXT',
+                'email': 'TEXT',
+                'first_name': 'TEXT',
+                'last_name': 'TEXT',
+                'is_active': 'BOOLEAN',
+                'date_joined': 'TEXT',
+                'last_login': 'TEXT'
+            }, primary_key='id', unique_keys=['username', 'email'])
+        
+        # Tasks table (for JOIN demonstration)
+        if 'tasks' not in self._db.tables:
+            self._db.create_table('tasks', {
+                'id': 'INTEGER',
+                'user_id': 'INTEGER',
+                'title': 'TEXT',
+                'description': 'TEXT',
+                'status': 'TEXT',
+                'priority': 'TEXT',
+                'created_at': 'TEXT',
+                'updated_at': 'TEXT',
+                'due_date': 'TEXT'
+            }, primary_key='id')
+    
+    # === User Operations ===
+    
+    def get_all_users(self) -> List[Dict]:
+        """Get all users"""
+        return self._db.select('users', {})
+    
+    def get_user(self, user_id: int) -> Optional[Dict]:
+        """Get user by ID"""
+        results = self._db.select('users', {'id': user_id})
+        return results[0] if results else None
+    
+    def get_user_by_username(self, username: str) -> Optional[Dict]:
+        """Get user by username"""
+        results = self._db.select('users', {'username': username})
+        return results[0] if results else None
+    
+    def create_user(self, user_data: Dict) -> Dict:
+        """Create a new user"""
+        # Generate ID if not provided
+        if 'id' not in user_data:
+            # Simple ID generation - get max ID + 1
+            all_users = self.get_all_users()
+            max_id = max([u.get('id', 0) for u in all_users]) if all_users else 0
+            user_data['id'] = max_id + 1
+        
+        # Set defaults
+        if 'is_active' not in user_data:
+            user_data['is_active'] = True
+        
+        self._db.insert('users', user_data)
+        return user_data
+    
+    def update_user(self, user_id: int, updates: Dict) -> bool:
+        """Update user"""
+        count = self._db.update('users', updates, {'id': user_id})
+        return count > 0
+    
+    def delete_user(self, user_id: int) -> bool:
+        """Delete user"""
+        count = self._db.delete('users', {'id': user_id})
+        return count > 0
+    
+    # === Task Operations ===
+    
+    def get_all_tasks(self) -> List[Dict]:
+        """Get all tasks with user information (JOIN)"""
+        # Use JOIN to get user info
+        return self._db.join_tables('tasks', 'users', 'user_id', 'id', 'INNER')
+    
+    def get_tasks_by_user(self, user_id: int) -> List[Dict]:
+        """Get tasks for a specific user"""
+        return self._db.select('tasks', {'user_id': user_id})
+    
+    def get_task(self, task_id: int) -> Optional[Dict]:
+        """Get task by ID"""
+        results = self._db.select('tasks', {'id': task_id})
+        return results[0] if results else None
+    
+    def create_task(self, task_data: Dict) -> Dict:
+        """Create a new task"""
+        if 'id' not in task_data:
+            all_tasks = self._db.select('tasks', {})
+            max_id = max([t.get('id', 0) for t in all_tasks]) if all_tasks else 0
+            task_data['id'] = max_id + 1
+        
+        self._db.insert('tasks', task_data)
+        return task_data
+    
+    def update_task(self, task_id: int, updates: Dict) -> bool:
+        """Update task"""
+        count = self._db.update('tasks', updates, {'id': task_id})
+        return count > 0
+    
+    def delete_task(self, task_id: int) -> bool:
+        """Delete task"""
+        count = self._db.delete('tasks', {'id': task_id})
+        return count > 0
+    
+    # === SQL Execution ===
+    
+    def execute_sql(self, sql: str) -> Dict:
+        """Execute raw SQL (for SQL executor page)"""
+        return self._db.execute(sql)
+    
+    # === Utility Methods ===
+    
+    def get_table_info(self, table_name: str) -> Optional[Dict]:
+        """Get table structure information"""
+        table = self._db.get_table(table_name)
+        if table:
+            return table.describe()
+        return None
+    
+    def list_tables(self) -> List[str]:
+        """List all tables"""
+        return self._db.list_tables()
+    
+    def save_database(self):
+        """Persist database to disk"""
+        self._db.save()
 
-try:
-    from rdbms.database import Database
-    print("✓ Successfully imported custom RDBMS")
-    
-    # Create database instance
-    db = Database("pesapal_web_db")
-    
-    # Setup tables if they don't exist
-    if not db.get_table("users"):
-        db.create_table(
-            name="users",
-            columns={
-                "id": "INTEGER",
-                "username": "TEXT",
-                "email": "TEXT",
-                "full_name": "TEXT",
-                "created_at": "DATETIME"
-            },
-            primary_key="id",
-            unique_keys=["email", "username"]
-        )
-        print("Created users table")
-    
-    if not db.get_table("tasks"):
-        db.create_table(
-            name="tasks",
-            columns={
-                "id": "INTEGER",
-                "title": "TEXT",
-                "description": "TEXT",
-                "user_id": "INTEGER",
-                "status": "TEXT",
-                "priority": "TEXT",
-                "created_at": "DATETIME",
-                "due_date": "DATETIME"
-            },
-            primary_key="id"
-        )
-        print("Created tasks table")
-    
-    # Add sample data
-    users_table = db.get_table("users")
-    if users_table.count() == 0:
-        sample_users = [
-            {"id": 1, "username": "admin", "email": "admin@pesapal.com", "full_name": "Admin User", "created_at": "2024-01-01"},
-            {"id": 2, "username": "john", "email": "john@pesapal.com", "full_name": "John Doe", "created_at": "2024-01-02"},
-            {"id": 3, "username": "jane", "email": "jane@pesapal.com", "full_name": "Jane Smith", "created_at": "2024-01-03"},
-        ]
-        for user in sample_users:
-            users_table.insert(user)
-        print(f"Added {len(sample_users)} sample users")
-    
-    tasks_table = db.get_table("tasks")
-    if tasks_table.count() == 0:
-        sample_tasks = [
-            {"id": 1, "title": "Setup RDBMS", "description": "Build custom database engine", "user_id": 1, "status": "completed", "priority": "high", "created_at": "2024-01-10", "due_date": "2024-01-15"},
-            {"id": 2, "title": "Create Web API", "description": "Build Django REST API", "user_id": 1, "status": "in_progress", "priority": "high", "created_at": "2024-01-11", "due_date": "2024-01-18"},
-            {"id": 3, "title": "Design UI", "description": "Create user interface", "user_id": 2, "status": "pending", "priority": "medium", "created_at": "2024-01-12", "due_date": "2024-01-20"},
-        ]
-        for task in sample_tasks:
-            tasks_table.insert(task)
-        print(f"Added {len(sample_tasks)} sample tasks")
-    
-    rdbms_service = db
-    
-except ImportError as e:
-    print(f"⚠ Could not import RDBMS: {e}")
-    print("⚠ Using mock database for development")
-    
-    # Mock database
-    class MockDatabase:
-        def __init__(self, name):
-            self.name = name
-            self.tables = {
-                "users": MockTable(),
-                "tasks": MockTable()
-            }
-        
-        def get_table(self, name):
-            return self.tables.get(name)
-        
-        def execute(self, sql):
-            return {"message": "Mock database", "sql": sql}
-    
-    class MockTable:
-        def __init__(self):
-            self.data = []
-            self.columns = {}
-        
-        def insert(self, row):
-            self.data.append(row)
-            return len(self.data) - 1
-        
-        def select(self, where=None):
-            if not where:
-                return self.data
-            # Simple filtering
-            results = []
-            for row in self.data:
-                match = True
-                for key, value in where.items():
-                    if row.get(key) != value:
-                        match = False
-                        break
-                if match:
-                    results.append(row)
-            return results
-        
-        def count(self):
-            return len(self.data)
-        
-        def join(self, other, left_on, right_on, join_type="INNER"):
-            # Simple mock join
-            results = []
-            for left in self.data:
-                for right in other.data:
-                    if left.get(left_on) == right.get(right_on):
-                        merged = left.copy()
-                        for k, v in right.items():
-                            merged[f"{other.name}_{k}"] = v
-                        results.append(merged)
-            return results
-    
-    rdbms_service = MockDatabase("mock_db")
-    
-    # Add mock data
-    mock_users = [
-        {"id": 1, "username": "admin", "email": "admin@pesapal.com", "full_name": "Admin User", "created_at": "2024-01-01"},
-        {"id": 2, "username": "john", "email": "john@pesapal.com", "full_name": "John Doe", "created_at": "2024-01-02"},
-    ]
-    for user in mock_users:
-        rdbms_service.tables["users"].insert(user)
-    
-    mock_tasks = [
-        {"id": 1, "title": "Setup RDBMS", "description": "Build database", "user_id": 1, "status": "completed"},
-        {"id": 2, "title": "Create API", "description": "Build REST API", "user_id": 1, "status": "in_progress"},
-    ]
-    for task in mock_tasks:
-        rdbms_service.tables["tasks"].insert(task)
-
-print("✓ RDBMS service initialized")
+# Singleton instance
+rdbms_service = RDBMSService()

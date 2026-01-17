@@ -3,18 +3,55 @@ Interactive REPL for the RDBMS
 """
 import cmd
 from .database import Database
+from .parser import SQLParser
 from typing import Dict, List, Any 
 
-class RDBMS_REPL(cmd.Cmd):
+class REPL(cmd.Cmd):
     """Interactive SQL REPL"""
     
     intro = "Welcome to SimpleRDBMS REPL. Type 'help' or '?' for commands."
     prompt = "rdbms> "
     
+    
     def __init__(self):
         super().__init__()
         self.db = Database("repl_db")
+        self._initialize_demo_data()  
     
+    def _initialize_demo_data(self):
+        """Initialize the REPL with demo tables and data"""
+        # Only create if they don't exist
+        if 'users' not in self.db.tables:
+            print("Initializing demo database...")
+            
+            # Create users table
+            self.db.create_table('users', {
+                'id': 'INTEGER',
+                'name': 'TEXT',
+                'email': 'TEXT',
+                'role': 'TEXT'
+            }, primary_key='id', unique_keys=['email'])
+            
+            # Create tasks table
+            self.db.create_table('tasks', {
+                'id': 'INTEGER',
+                'user_id': 'INTEGER',
+                'title': 'TEXT',
+                'description': 'TEXT',
+                'status': 'TEXT',
+                'priority': 'TEXT'
+            }, primary_key='id')
+            
+            # Insert sample data
+            self.db.insert('users', {'id': 1, 'name': 'John Doe', 'email': 'john@example.com', 'role': 'admin'})
+            self.db.insert('users', {'id': 2, 'name': 'Jane Smith', 'email': 'jane@example.com', 'role': 'user'})
+            
+            self.db.insert('tasks', {'id': 1, 'user_id': 1, 'title': 'Design database', 'description': 'Create ERD', 'status': 'completed', 'priority': 'high'})
+            self.db.insert('tasks', {'id': 2, 'user_id': 2, 'title': 'Write tests', 'description': 'Unit tests', 'status': 'pending', 'priority': 'medium'})
+            
+            self.db.save()
+            print("Demo database ready!")
+        
     def do_exec(self, arg):
         """Execute SQL command: exec <sql>"""
         if not arg:
@@ -106,7 +143,7 @@ class RDBMS_REPL(cmd.Cmd):
             print(result.get("message", "Command executed"))
 
 def main():
-    repl = RDBMS_REPL()
+    repl = REPL()
     repl.cmdloop()
 
 if __name__ == "__main__":

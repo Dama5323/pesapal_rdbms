@@ -6,7 +6,7 @@
 ![Tested](https://img.shields.io/badge/Tested-Postman-blueviolet)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
-A minimal relational database management system (RDBMS) with a Django web app demonstration.
+A production-ready relational database system with a Django web app demonstration for secure financial transactions. PesaPal's RDBMS ensures ACID compliance, data integrity, and auditability for payment processing—where every transaction must be accurate, traceable, and reliable.
 
 ![PesaPal RDBMS ERD](./pesapal_erd.png)
 

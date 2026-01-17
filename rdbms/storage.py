@@ -6,9 +6,9 @@ import os
 import pickle
 from typing import Dict, List, Any
 
-class StorageEngine:
+class JSONStorage:
     """Handles file persistence for the database"""
-    
+
     def __init__(self, db_name: str):
         self.db_name = db_name
         self.data_dir = f"data/{db_name}"

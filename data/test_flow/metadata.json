@@ -1,0 +1,14 @@
+{
+  "name": "test_flow",
+  "tables": {
+    "users": {
+      "columns": {
+        "id": "INTEGER",
+        "name": "TEXT"
+      },
+      "primary_key": "id",
+      "unique_keys": [],
+      "row_count": 0
+    }
+  }
+}

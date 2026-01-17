@@ -4,6 +4,8 @@ Table implementation with CRUD, indexing, and constraints
 from typing import Dict, List, Any, Optional, Set
 import re
 
+from certifi import where
+
 class Table:
     """Represents a database table"""
     
@@ -239,7 +241,17 @@ class Table:
             return True
         
         for key, value in where.items():
-            if key not in row or row[key] != value:
+            if key not in row:
+                return False
+            
+            # Try to cast the WHERE value
+            try:
+                casted_value = self._cast_value(key, value)
+            except ValueError:
+                casted_value = value
+            
+            # Compare
+            if row[key] != casted_value:
                 return False
         
         return True

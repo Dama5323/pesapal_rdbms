@@ -1,0 +1,39 @@
+{
+  "name": "pesapal_web",
+  "tables": {
+    "users": {
+      "columns": {
+        "id": "INTEGER",
+        "username": "TEXT",
+        "email": "TEXT",
+        "first_name": "TEXT",
+        "last_name": "TEXT",
+        "is_active": "BOOLEAN",
+        "date_joined": "TEXT",
+        "last_login": "TEXT"
+      },
+      "primary_key": "id",
+      "unique_keys": [
+        "username",
+        "email"
+      ],
+      "row_count": 0
+    },
+    "tasks": {
+      "columns": {
+        "id": "INTEGER",
+        "user_id": "INTEGER",
+        "title": "TEXT",
+        "description": "TEXT",
+        "status": "TEXT",
+        "priority": "TEXT",
+        "created_at": "TEXT",
+        "updated_at": "TEXT",
+        "due_date": "TEXT"
+      },
+      "primary_key": "id",
+      "unique_keys": [],
+      "row_count": 0
+    }
+  }
+}

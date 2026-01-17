@@ -1,9 +1,9 @@
-# tasks/urls.py
 from django.urls import path
-from .views import TaskListView, TaskDetailView, SQLExecutorView
+from . import views
 
 urlpatterns = [
-    path('', TaskListView.as_view(), name='task-list'),
-    path('<int:task_id>/', TaskDetailView.as_view(), name='task-detail'),
-    path('sql/', SQLExecutorView.as_view(), name='sql-executor'),
+    path('', views.tasks_list, name='tasks_list'),
+    path('<int:task_id>/', views.task_detail, name='task_detail'),
+    path('sql/', views.sql_executor, name='sql_executor'),
+    path('join-demo/', views.join_demo, name='join_demo'),
 ]

@@ -1,0 +1,15 @@
+{
+  "name": "repl_db",
+  "tables": {
+    "users": {
+      "columns": {
+        "id": "INTEGER",
+        "name": "TEXT",
+        "email": "TEXT"
+      },
+      "primary_key": null,
+      "unique_keys": [],
+      "row_count": 0
+    }
+  }
+}

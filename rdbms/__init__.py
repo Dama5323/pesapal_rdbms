@@ -1,8 +1,10 @@
 """
 SimpleRDBMS - A minimal relational database management system
 """
+# rdbms/__init__.py
 from .database import Database
-from .repl import RDBMS_REPL
+from .table import Table
+from .parser import SQLParser
+from .storage import JSONStorage
 
-__version__ = "0.1.0"
-__all__ = ["Database", "RDBMS_REPL"]
+__all__ = ['Database', 'Table', 'SQLParser', 'JSONStorage', 'REPL']

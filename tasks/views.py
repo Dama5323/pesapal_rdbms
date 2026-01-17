@@ -1,149 +1,172 @@
-# tasks/views.py
-"""
-Simple views for Tasks app
-"""
 import sys
 import os
+import json
 from django.http import JsonResponse
-from django.views import View
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
 
-def dashboard(request):
-    """Render the main dashboard"""
-    return render(request, 'dashboard.html')
+# Add the project root to Python path so we can import services
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-def api_docs(request):
-    """Render API documentation page"""
-    return render(request, 'api_docs.html')  # You'll need to create this
+# Import the service
+from services import rdbms_service
 
-def sql_executor(request):
-    """Render SQL executor page"""
-    return render(request, 'sql_executor.html')  # You'll need to create this
-
-# Add project root to path
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
-try:
-    from services import rdbms_service
-    RDBMS_AVAILABLE = True
-except ImportError:
-    print("⚠ Could not import rdbms_service from services module")
-    RDBMS_AVAILABLE = False
-    rdbms_service = None
-
-class TaskListView(View):
-    """List all tasks with JOIN demonstration"""
+@csrf_exempt
+def tasks_list(request):
+    """Handle /api/tasks/ endpoint (with JOIN demonstration)"""
+    if request.method == 'GET':
+        # Get tasks with user info (JOIN)
+        tasks = rdbms_service.get_all_tasks()
+        
+        # Format for better display
+        formatted_tasks = []
+        for task in tasks:
+            formatted = {
+                'id': task.get('id'),
+                'title': task.get('title'),
+                'description': task.get('description'),
+                'status': task.get('status'),
+                'priority': task.get('priority'),
+                'user': {
+                    'id': task.get('user_id'),
+                    'name': task.get('users_name', 'Unknown'),
+                    'email': task.get('users_email', '')
+                } if 'users_name' in task else {'id': task.get('user_id')}
+            }
+            formatted_tasks.append(formatted)
+        
+        return JsonResponse({'tasks': formatted_tasks})
     
-    def get(self, request):
-        if not RDBMS_AVAILABLE or not rdbms_service:
-            return JsonResponse({
-                "error": "RDBMS service not available",
-                "tasks": [
-                    {"id": 1, "title": "Test Task 1", "user_id": 1},
-                    {"id": 2, "title": "Test Task 2", "user_id": 2}
-                ]
-            })
-        
-        users_table = rdbms_service.get_table("users")
-        tasks_table = rdbms_service.get_table("tasks")
-        
-        if not users_table or not tasks_table:
-            return JsonResponse({"tasks": []})
-        
-        # Perform JOIN between tasks and users
-        try:
-            joined_data = tasks_table.join(users_table, "user_id", "id", "INNER")
-            
-            # Format results
-            tasks_with_users = []
-            for row in joined_data:
-                task_info = {
-                    "id": row.get("id"),
-                    "title": row.get("title"),
-                    "description": row.get("description"),
-                    "status": row.get("status"),
-                    "priority": row.get("priority"),
-                    "user": {
-                        "id": row.get("user_id"),
-                        "username": row.get("username"),
-                        "email": row.get("email")
-                    } if row.get("username") else None
-                }
-                tasks_with_users.append(task_info)
-            
-            return JsonResponse({
-                "message": "JOIN demonstration successful",
-                "tasks": tasks_with_users,
-                "join_type": "INNER JOIN tasks ON users.id = tasks.user_id"
-            })
-            
-        except Exception as e:
-            # If JOIN fails, return tasks without user info
-            tasks = tasks_table.select()
-            return JsonResponse({
-                "message": f"Simple select (JOIN failed: {str(e)})",
-                "tasks": tasks
-            })
-
-class TaskDetailView(View):
-    """Get task by ID"""
-    
-    def get(self, request, task_id):
-        if not RDBMS_AVAILABLE or not rdbms_service:
-            return JsonResponse({
-                "error": "RDBMS service not available",
-                "task": {"id": task_id, "title": "Test Task"}
-            })
-        
-        tasks_table = rdbms_service.get_table("tasks")
-        if tasks_table:
-            tasks = tasks_table.select({"id": int(task_id)})
-            if tasks:
-                return JsonResponse({"task": tasks[0]})
-        
-        return JsonResponse({"error": "Task not found"}, status=404)
-
-class SQLExecutorView(View):
-    """Execute raw SQL (demonstrates SQL interface)"""
-    
-    def post(self, request):
-        if not RDBMS_AVAILABLE or not rdbms_service:
-            return JsonResponse({
-                "error": "RDBMS service not available",
-                "message": "Cannot execute SQL"
-            })
-        
-        # Get SQL from POST data
-        import json
+    elif request.method == 'POST':
         try:
             data = json.loads(request.body)
-            sql = data.get('sql', '').strip()
+            task = rdbms_service.create_task(data)
+            return JsonResponse({'task': task}, status=201)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@csrf_exempt
+def task_detail(request, task_id):
+    """Handle /api/tasks/<id>/ endpoint"""
+    if request.method == 'GET':
+        task = rdbms_service.get_task(task_id)
+        if task:
+            return JsonResponse({'task': task})
+        return JsonResponse({'error': 'Task not found'}, status=404)
+    
+    elif request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+            success = rdbms_service.update_task(task_id, data)
+            if success:
+                return JsonResponse({'message': 'Task updated successfully'})
+            return JsonResponse({'error': 'Task not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    
+    elif request.method == 'DELETE':
+        success = rdbms_service.delete_task(task_id)
+        if success:
+            return JsonResponse({'message': 'Task deleted successfully'})
+        return JsonResponse({'error': 'Task not found'}, status=404)
+    
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@csrf_exempt
+def sql_executor(request):
+    """Handle /api/tasks/sql/ endpoint"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            sql = data.get('query', '')
             
             if not sql:
-                return JsonResponse({"error": "SQL command required"}, status=400)
+                return JsonResponse({'error': 'No SQL query provided'}, status=400)
             
-            # Execute SQL
-            result = rdbms_service.execute(sql)
+            result = rdbms_service.execute_sql(sql)
             return JsonResponse(result)
-            
-        except json.JSONDecodeError:
-            return JsonResponse({"error": "Invalid JSON"}, status=400)
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            return JsonResponse({'error': str(e)}, status=400)
     
-    def get(self, request):
-        # Show available SQL commands
-        return JsonResponse({
-            "available_commands": [
-                "SELECT * FROM users",
-                "SELECT * FROM tasks",
-                "CREATE TABLE ...",
-                "INSERT INTO ...",
-                "UPDATE ... SET ... WHERE ...",
-                "DELETE FROM ... WHERE ..."
-            ],
-            "example": "POST with JSON: {\"sql\": \"SELECT * FROM users\"}"
-        })
+    return JsonResponse({'error': 'POST method required'}, status=405)
+
+@csrf_exempt  
+def join_demo(request):
+    """Special endpoint to demonstrate JOIN operations"""
+    if request.method == 'GET':
+        try:
+            # Create fresh demo data
+            users = [
+                {'id': 1, 'username': 'alice', 'email': 'alice@example.com', 'first_name': 'Alice', 'last_name': 'Smith', 'is_active': True},
+                {'id': 2, 'username': 'bob', 'email': 'bob@example.com', 'first_name': 'Bob', 'last_name': 'Johnson', 'is_active': True},
+                {'id': 3, 'username': 'charlie', 'email': 'charlie@example.com', 'first_name': 'Charlie', 'last_name': 'Brown', 'is_active': True},
+            ]
+            
+            tasks = [
+                {'id': 1, 'user_id': 1, 'title': 'Design database schema', 'description': 'Create ERD diagram', 'status': 'completed', 'priority': 'high'},
+                {'id': 2, 'user_id': 1, 'title': 'Implement API', 'description': 'Build REST endpoints', 'status': 'in_progress', 'priority': 'high'},
+                {'id': 3, 'user_id': 2, 'title': 'Write tests', 'description': 'Unit tests for all modules', 'status': 'pending', 'priority': 'medium'},
+                {'id': 4, 'user_id': 3, 'title': 'Documentation', 'description': 'User guide and API docs', 'status': 'pending', 'priority': 'low'},
+            ]
+            
+            # Clear existing tables if they exist
+            if 'users' in rdbms_service.list_tables():
+                rdbms_service.execute_sql("DROP TABLE users")
+            if 'tasks' in rdbms_service.list_tables():
+                rdbms_service.execute_sql("DROP TABLE tasks")
+            
+            # Create fresh tables
+            rdbms_service._ensure_tables()
+            
+            # Insert sample data
+            for user in users:
+                rdbms_service.create_user(user)
+            
+            for task in tasks:
+                rdbms_service.create_task(task)
+            
+            # Execute JOIN queries
+            join_results = []
+            
+            # INNER JOIN
+            inner_join = rdbms_service.execute_sql(
+                "SELECT users.username, tasks.title, tasks.status FROM users JOIN tasks ON users.id = tasks.user_id"
+            )
+            join_results.append({
+                'type': 'INNER JOIN',
+                'description': 'Returns matching records from both tables',
+                'sql': 'SELECT users.username, tasks.title, tasks.status FROM users JOIN tasks ON users.id = tasks.user_id',
+                'results': inner_join.get('data', [])[:3],
+                'count': inner_join.get('count', 0)
+            })
+            
+            # Complex JOIN with WHERE
+            complex_join = rdbms_service.execute_sql(
+                "SELECT users.username, tasks.title, tasks.priority FROM users JOIN tasks ON users.id = tasks.user_id WHERE tasks.priority = 'high'"
+            )
+            join_results.append({
+                'type': 'JOIN with WHERE',
+                'description': 'High priority tasks with assigned users',
+                'sql': "SELECT users.username, tasks.title, tasks.priority FROM users JOIN tasks ON users.id = tasks.user_id WHERE tasks.priority = 'high'",
+                'results': complex_join.get('data', []),
+                'count': complex_join.get('count', 0)
+            })
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': 'JOIN demonstration setup complete',
+                'tables_created': ['users', 'tasks'],
+                'sample_data_inserted': {
+                    'users': len(users),
+                    'tasks': len(tasks)
+                },
+                'join_demonstrations': join_results
+            })
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    return JsonResponse({'error': 'GET method required'}, status=405)

@@ -1,0 +1,29 @@
+{
+  "name": "pesapal_db",
+  "tables": {
+    "users": {
+      "columns": {
+        "id": "INTEGER",
+        "name": "TEXT",
+        "email": "TEXT",
+        "role": "TEXT"
+      },
+      "primary_key": null,
+      "unique_keys": [],
+      "row_count": 3
+    },
+    "tasks": {
+      "columns": {
+        "id": "INTEGER",
+        "user_id": "INTEGER",
+        "title": "TEXT",
+        "description": "TEXT",
+        "status": "TEXT",
+        "priority": "TEXT"
+      },
+      "primary_key": null,
+      "unique_keys": [],
+      "row_count": 0
+    }
+  }
+}
