@@ -6,21 +6,19 @@
 ![Tested](https://img.shields.io/badge/Tested-Postman-blueviolet)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
-A production-ready relational database system with a Django web app demonstration for secure financial transactions. PesaPal's RDBMS ensures ACID compliance, data integrity, and auditability for payment processing—where every transaction must be accurate, traceable, and reliable.
+PesaPal RDBMS is a production-ready financial database system that solves the critical problem of data integrity in payment processing. Unlike generic CRUD apps, it's built with ACID compliance at its core, ensuring that financial transactions are 100% reliable, fully auditable, and compliant with financial regulations. It's not just a Django app—it's a financial-grade data layer ready for real-world payment volumes
 
-## Why RDBMS for Payments?
+## 🎯 The Challenge I Solve
 
-- **ACID Compliance**: Guarantees transaction atomicity (all-or-nothing execution)
+Building financial applications requires **absolute data reliability**. A single misplaced decimal or failed transaction can mean real financial loss. Traditional databases don't guarantee the ACID properties needed for payments.
 
-- **Data Integrity**: Foreign key constraints prevent orphaned records
-
-- **Audit Trail**: Complete transaction history with immutable timestamps
-
-- **Regulatory Ready**: Built-in features for PCI DSS, GDPR compliance
-
--  **Real-time Consistency**: Strong consistency over eventual consistency for financial data
-
--  **Complex Queries**: SQL enables powerful fraud detection and reporting
+### **My Solution**
+PesaPal RDBMS implements:
+- **Atomic transactions** - Money transfers succeed completely or fail completely
+- **Immutable audit logs** - Every financial action is permanently recorded
+- **Referential integrity** - No orphaned transactions or broken relationships
+- **Real-time consistency** - Balances are always accurate, never eventually consistent
+- **Complex Queries**: Enables powerful fraud detection and reporting
 
 Because in finance, data accuracy isn't optional—it's everything.
 
@@ -100,6 +98,14 @@ pesapal_rdbms/
 ---
 
 ## Quick Start
+
+### Verify Django Configuration
+
+To confirm Django settings and database connectivity are correctly configured, run:
+
+```bash
+python check_config.py
+```
 
 ## Installation & Setup
 
