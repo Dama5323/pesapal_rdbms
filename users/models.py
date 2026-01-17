@@ -232,7 +232,7 @@ class Account(models.Model):
         ordering = ['-created_at']
         constraints = [
             models.CheckConstraint(
-                check=models.Q(balance__gte=models.F('minimum_balance')),
+                condition=models.Q(balance__gte=models.F('minimum_balance')),
                 name='balance_above_minimum'
             ),
         ]
