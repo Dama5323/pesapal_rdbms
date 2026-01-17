@@ -1,23 +1,23 @@
-# render.yaml
 services:
   - type: web
     name: pesapal-rdbms
     env: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py collectstatic --noinput
     startCommand: gunicorn web.wsgi:application
     envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: pesapal-db
-          property: connectionString
       - key: SECRET_KEY
         generateValue: true
       - key: DEBUG
         value: "False"
       - key: ALLOWED_HOSTS
         value: ".onrender.com"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pesapal-db
+          property: connectionString
     healthCheckPath: /admin/
-    autoDeploy: true
 
 databases:
   - name: pesapal-db

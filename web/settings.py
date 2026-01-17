@@ -159,7 +159,8 @@ REST_FRAMEWORK = {
 
 # CORS settings (allow frontend to access API)
 CORS_ALLOWED_ORIGINS = [
+    "https://pesapal-rdbms.onrender.com",
     "http://localhost:3000",
-    "http://127.0.0.1:3000",
 ]
 
+AUTH_USER_MODEL = 'users.User'
