@@ -8,6 +8,22 @@
 
 A production-ready relational database system with a Django web app demonstration for secure financial transactions. PesaPal's RDBMS ensures ACID compliance, data integrity, and auditability for payment processing—where every transaction must be accurate, traceable, and reliable.
 
+## Why RDBMS for Payments?
+
+- **ACID Compliance**: Guarantees transaction atomicity (all-or-nothing execution)
+
+- **Data Integrity**: Foreign key constraints prevent orphaned records
+
+- **Audit Trail**: Complete transaction history with immutable timestamps
+
+- **Regulatory Ready**: Built-in features for PCI DSS, GDPR compliance
+
+-  **Real-time Consistency**: Strong consistency over eventual consistency for financial data
+
+-  **Complex Queries**: SQL enables powerful fraud detection and reporting
+
+Because in finance, data accuracy isn't optional—it's everything.
+
 ![PesaPal RDBMS ERD](./pesapal_erd.png)
 
 ## 📋 Table of Contents
