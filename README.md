@@ -4,7 +4,12 @@
 ![REST-API](https://img.shields.io/badge/REST-API-✓-success)
 ![Docs](https://img.shields.io/badge/Docs-Swagger-orange)
 ![Tested](https://img.shields.io/badge/Tested-Postman-blueviolet)
+![Render](https://img.shields.io/badge/deployed_on-render-5363e6)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
+
+## Live Demo
+
+**Live URL:** [https://pesapal-rdbms-gm67.onrender.com](https://pesapal-rdbms-gm67.onrender.com)
 
 PesaPal RDBMS is a production-ready financial database system that solves the critical problem of data integrity in payment processing. Unlike generic CRUD apps, it's built with ACID compliance at its core, ensuring that financial transactions are 100% reliable, fully auditable, and compliant with financial regulations. It's not just a Django app—it's a financial-grade data layer ready for real-world payment volumes
 
@@ -20,7 +25,12 @@ PesaPal RDBMS implements:
 - **Real-time consistency** - Balances are always accurate, never eventually consistent
 - **Complex Queries**: Enables powerful fraud detection and reporting
 
-Because in finance, data accuracy isn't optional—it's everything.
+### **Technology Stack:**
+- **Backend:** Django 6.0 + Django REST Framework
+- **Database:** PostgreSQL (ACID-compliant RDBMS)
+- **Deployment:** Render.com
+- **Web Server:** Gunicorn + WhiteNoise
+- **Authentication:** Django Session + REST Framework
 
 ![PesaPal RDBMS ERD](./pesapal_erd.png)
 
@@ -62,7 +72,6 @@ Because in finance, data accuracy isn't optional—it's everything.
 - ✅ **Task System**: Demonstrate JOIN operations between users and tasks
 - ✅ **SQL Executor**: Safe SQL query interface with syntax highlighting
 - ✅ **Admin Interface**: Django admin with custom styling
-
 
 ---
 
@@ -308,21 +317,22 @@ python -m pytest --cov=rdbms --cov-report=html
 
 ## Deployment
 
-### Production Setup
 
-1. **Environment Variables**
+### **Production Deployment on Render.com**
+- **Platform:** Render.com (Free Tier)
+- **Database:** PostgreSQL with ACID compliance
+- **URL:** https://pesapal-rdbms-gm67.onrender.com
+- **Auto-deploy:** On Git push to main branch
+- **SSL/HTTPS:** Automatic Let's Encrypt certificates
+
+### **Local Development**
 ```bash
-export DEBUG=False
-export SECRET_KEY=your-secret-key-here
-export ALLOWED_HOSTS=yourdomain.com
+git clone https://github.com/Dama5323/pesapal_rdbms.git
+cd pesapal_rdbms
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
 ```
-
-## Learn More
-
-- [Django Documentation](https://docs.djangoproject.com/)
-- [Database Systems Concepts](https://www.db-book.com/)
-- [SQL Tutorial](https://www.w3schools.com/sql/)
-- [REST API Best Practices](https://restfulapi.net/)
 
 ## Authors
 
