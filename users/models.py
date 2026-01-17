@@ -234,12 +234,9 @@ class Account(models.Model):
             models.CheckConstraint(
                 condition=models.Q(balance__gte=models.F('minimum_balance')),
                 name='balance_above_minimum'
-            ),
-<<<<<<< HEAD
+            )
         ]
-=======
-        ]
-    
+        
     def __str__(self):
         return f"{self.account_number} - {self.user.username} ({self.balance} {self.currency})"
->>>>>>> a4ed01bfeeed80aa6b141eb3def2390832cdc843
+            
