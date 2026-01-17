@@ -232,10 +232,7 @@ class Account(models.Model):
         ordering = ['-created_at']
         constraints = [
             models.CheckConstraint(
-                check=models.Q(balance__gte=models.F('minimum_balance')),
+                condition=models.Q(balance__gte=models.F('minimum_balance')),
                 name='balance_above_minimum'
             ),
         ]
-    
-    def __str__(self):
-        return f"{self.account_number} - {self.user.username} ({self.balance} {self.currency})"
