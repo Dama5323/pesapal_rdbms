@@ -1,4 +1,3 @@
-# tasks/serializers.py
 from rest_framework import serializers
 from .models import Transaction, Invoice, AuditLog
 from users.models import Account, User

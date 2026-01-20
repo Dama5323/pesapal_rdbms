@@ -2,33 +2,11 @@
 Minimal SQL-like parser - Handles basic SQL commands
 """
 import re
+import shlex
 from typing import Dict, List, Any, Optional, Tuple
 
 class SQLParser:
     """Simple SQL parser"""
-    
-    def parse_and_execute(self, sql: str, database) -> Dict:
-        """Parse SQL and execute against database"""
-        sql = sql.strip()
-        sql_upper = sql.upper()
-        
-        try:
-            if sql_upper.startswith("CREATE TABLE"):
-                return self._parse_create_table(sql, database)
-            elif sql_upper.startswith("INSERT INTO"):
-                return self._parse_insert(sql, database)
-            elif sql_upper.startswith("SELECT"):
-                return self._parse_select(sql, database)
-            elif sql_upper.startswith("UPDATE"):
-                return self._parse_update(sql, database)
-            elif sql_upper.startswith("DELETE FROM"):
-                return self._parse_delete(sql, database)
-            elif sql_upper.startswith("DROP TABLE"):
-                return self._parse_drop_table(sql, database)
-            else:
-                return {"error": f"Unsupported SQL command: {sql}"}
-        except Exception as e:
-            return {"error": str(e)}
     
     def parse(self, sql: str) -> Dict:
         """
@@ -40,27 +18,42 @@ class SQLParser:
         Returns:
             Dictionary with parsed SQL components
         """
-        sql = sql.strip()
+        # Remove trailing semicolon and whitespace
+        sql = sql.strip().rstrip(';').strip()
         sql_upper = sql.upper()
         
         try:
-            if sql_upper.startswith("CREATE TABLE"):
-                return self._parse_create_table_structure(sql)
+            # Handle SHOW TABLES
+            if sql_upper == "SHOW TABLES":
+                return {"type": "SHOW_TABLES"}
+            
+            elif sql_upper.startswith("CREATE TABLE"):
+                return self._parse_create_table(sql)
+                
             elif sql_upper.startswith("INSERT INTO"):
-                return self._parse_insert_structure(sql)
+                return self._parse_insert(sql)
+                
             elif sql_upper.startswith("SELECT"):
-                return self._parse_select_structure(sql)
+                return self._parse_select(sql)
+                
             elif sql_upper.startswith("UPDATE"):
-                return self._parse_update_structure(sql)
+                return self._parse_update(sql)
+                
             elif sql_upper.startswith("DELETE FROM"):
-                return self._parse_delete_structure(sql)
+                return self._parse_delete(sql)
+                
+            elif sql_upper.startswith("DROP TABLE"):
+                return self._parse_drop_table(sql)
+                
             else:
-                return {"type": "UNKNOWN", "error": f"Unsupported SQL: {sql}"}
+                # Try ledger commands
+                return self._parse_ledger_command(sql)
+                
         except Exception as e:
             return {"type": "ERROR", "error": str(e)}
     
-    def _parse_create_table_structure(self, sql: str) -> Dict:
-        """Parse CREATE TABLE into structure"""
+    def _parse_create_table(self, sql: str) -> Dict:
+        """Parse CREATE TABLE statement"""
         pattern = r'CREATE TABLE (\w+) \((.+)\)'
         match = re.match(pattern, sql, re.IGNORECASE | re.DOTALL)
         
@@ -101,8 +94,8 @@ class SQLParser:
             "unique_keys": unique_keys
         }
     
-    def _parse_insert_structure(self, sql: str) -> Dict:
-        """Parse INSERT statement into structure"""
+    def _parse_insert(self, sql: str) -> Dict:
+        """Parse INSERT statement"""
         pattern = r'INSERT INTO (\w+) \((.+?)\) VALUES \((.+?)\)'
         match = re.match(pattern, sql, re.IGNORECASE | re.DOTALL)
         
@@ -111,7 +104,7 @@ class SQLParser:
         
         table_name = match.group(1)
         columns = [col.strip() for col in match.group(2).split(',')]
-        values = [val.strip().strip("'") for val in match.group(3).split(',')]
+        values = self._parse_values(match.group(3).strip())
         
         if len(columns) != len(values):
             return {"type": "ERROR", "error": "Column count doesn't match value count"}
@@ -126,11 +119,42 @@ class SQLParser:
             "values": row_data
         }
     
-    def _parse_select_structure(self, sql: str) -> Dict:
-        """Parse SELECT statement into structure"""
+    def _parse_values(self, values_str: str) -> List:
+        """Parse VALUES clause, handling quoted strings with commas"""
+        values = []
+        current = ""
+        in_quotes = False
+        quote_char = None
+        
+        for char in values_str:
+            if char in "'\"" and (not in_quotes or quote_char == char):
+                in_quotes = not in_quotes
+                quote_char = char if in_quotes else None
+                current += char
+            elif char == ',' and not in_quotes:
+                values.append(current.strip())
+                current = ""
+            else:
+                current += char
+        
+        if current:
+            values.append(current.strip())
+        
+        # Remove quotes from values
+        parsed_values = []
+        for val in values:
+            if (val.startswith("'") and val.endswith("'")) or \
+               (val.startswith('"') and val.endswith('"')):
+                val = val[1:-1]
+            parsed_values.append(val)
+        
+        return parsed_values
+    
+    def _parse_select(self, sql: str) -> Dict:
+        """Parse SELECT statement"""
         # Check for JOIN
         if "JOIN" in sql.upper():
-            return self._parse_join_structure(sql)
+            return self._parse_join(sql)
         
         # Regular SELECT
         if 'WHERE' in sql.upper():
@@ -160,7 +184,6 @@ class SQLParser:
         # Parse WHERE clause
         conditions = {}
         if where_clause:
-            # Simple equality conditions only
             cond_parts = where_clause.split('AND')
             for part in cond_parts:
                 part = part.strip()
@@ -178,9 +201,9 @@ class SQLParser:
             "join": None
         }
     
-    def _parse_join_structure(self, sql: str) -> Dict:
-        """Parse JOIN statement into structure"""
-        # Match patterns like: SELECT * FROM table1 INNER JOIN table2 ON table1.id = table2.user_id
+    def _parse_join(self, sql: str) -> Dict:
+        """Parse JOIN statement"""
+        # Match: SELECT * FROM table1 INNER JOIN table2 ON table1.id = table2.user_id
         pattern = r'SELECT (.+?) FROM (\w+)\s+(\w+)?\s+JOIN (\w+)\s+ON\s+(.+?)(?:\s+WHERE\s+(.+))?$'
         match = re.match(pattern, sql, re.IGNORECASE)
         
@@ -226,7 +249,6 @@ class SQLParser:
         # Parse WHERE clause
         conditions = {}
         if where_clause:
-            # Simple equality conditions
             cond_parts = where_clause.split('AND')
             for part in cond_parts:
                 part = part.strip()
@@ -254,8 +276,8 @@ class SQLParser:
             }
         }
     
-    def _parse_update_structure(self, sql: str) -> Dict:
-        """Parse UPDATE statement into structure"""
+    def _parse_update(self, sql: str) -> Dict:
+        """Parse UPDATE statement"""
         pattern = r'UPDATE (\w+) SET (.+?)(?: WHERE (.+))?'
         match = re.match(pattern, sql, re.IGNORECASE)
         
@@ -279,7 +301,6 @@ class SQLParser:
         # Parse WHERE clause
         conditions = {}
         if where_clause:
-            # Simple equality conditions
             cond_parts = where_clause.split('AND')
             for part in cond_parts:
                 part = part.strip()
@@ -296,8 +317,8 @@ class SQLParser:
             "conditions": conditions
         }
     
-    def _parse_delete_structure(self, sql: str) -> Dict:
-        """Parse DELETE statement into structure"""
+    def _parse_delete(self, sql: str) -> Dict:
+        """Parse DELETE statement"""
         pattern = r'DELETE FROM (\w+)(?: WHERE (.+))?'
         match = re.match(pattern, sql, re.IGNORECASE)
         
@@ -310,7 +331,6 @@ class SQLParser:
         # Parse WHERE clause
         conditions = {}
         if where_clause:
-            # Simple equality conditions
             cond_parts = where_clause.split('AND')
             for part in cond_parts:
                 part = part.strip()
@@ -326,182 +346,93 @@ class SQLParser:
             "conditions": conditions
         }
     
-    # === OLD METHODS (for backward compatibility) ===
-    
-    def _parse_create_table(self, sql: str, database) -> Dict:
-        """Parse CREATE TABLE statement (legacy)"""
-        result = self._parse_create_table_structure(sql)
-        if "error" in result:
-            return result
-        
-        table = database.create_table(
-            result["table_name"],
-            result["columns"],
-            result["primary_key"],
-            result["unique_keys"]
-        )
-        return {"message": f"Table '{result['table_name']}' created", "table": table.name}
-    
-    def _parse_insert(self, sql: str, database) -> Dict:
-        """Parse INSERT statement (legacy)"""
-        result = self._parse_insert_structure(sql)
-        if "error" in result:
-            return result
-        
-        table = database.get_table(result["table_name"])
-        if not table:
-            return {"error": f"Table '{result['table_name']}' not found"}
-        
-        try:
-            table.insert(result["values"])
-            return {"message": "Row inserted successfully", "rows_affected": 1}
-        except Exception as e:
-            return {"error": str(e)}
-    
-    def _parse_select(self, sql: str, database) -> Dict:
-        """Parse SELECT statement (legacy)"""
-        result = self._parse_select_structure(sql)
-        if "error" in result:
-            return result
-        
-        table = database.get_table(result["table_name"])
-        if not table:
-            return {"error": f"Table '{result['table_name']}' not found"}
-        
-        if result["join"]:
-            # Use database join_tables method
-            join_result = database.join_tables(
-                result["table_name"],
-                result["join"]["table"],
-                result["join"]["main_key"],
-                result["join"]["join_key"],
-                result["join"]["type"]
-            )
-            
-            # Apply WHERE conditions
-            if result["conditions"]:
-                filtered = []
-                for row in join_result:
-                    matches = True
-                    for col, val in result["conditions"].items():
-                        if col not in row or str(row[col]) != val:
-                            matches = False
-                            break
-                    if matches:
-                        filtered.append(row)
-                join_result = filtered
-            
-            return {
-                "data": join_result,
-                "count": len(join_result),
-                "join_type": result["join"]["type"]
-            }
-        else:
-            # Regular select
-            results = table.select(result["conditions"], result["columns"])
-            return {
-                "data": results,
-                "count": len(results),
-                "columns": result["columns"] if result["columns"] else list(table.columns.keys())
-            }
-    
-    def _parse_update(self, sql: str, database) -> Dict:
-        """Parse UPDATE statement (legacy)"""
-        result = self._parse_update_structure(sql)
-        if "error" in result:
-            return result
-        
-        table = database.get_table(result["table_name"])
-        if not table:
-            return {"error": f"Table '{result['table_name']}' not found"}
-        
-        try:
-            count = table.update(result["updates"], result["conditions"])
-            return {"message": f"{count} row(s) updated", "rows_affected": count}
-        except Exception as e:
-            return {"error": str(e)}
-    
-    def _parse_delete(self, sql: str, database) -> Dict:
-        """Parse DELETE statement (legacy)"""
-        result = self._parse_delete_structure(sql)
-        if "error" in result:
-            return result
-        
-        table = database.get_table(result["table_name"])
-        if not table:
-            return {"error": f"Table '{result['table_name']}' not found"}
-        
-        count = table.delete(result["conditions"])
-        return {"message": f"{count} row(s) deleted", "rows_affected": count}
-    
-    def _parse_drop_table(self, sql: str, database) -> Dict:
-        """Parse DROP TABLE statement (legacy)"""
+    def _parse_drop_table(self, sql: str) -> Dict:
+        """Parse DROP TABLE statement"""
         pattern = r'DROP TABLE (\w+)'
         match = re.match(pattern, sql, re.IGNORECASE)
         
         if not match:
-            return {"error": "Invalid DROP TABLE syntax"}
+            return {"type": "ERROR", "error": "Invalid DROP TABLE syntax"}
         
         table_name = match.group(1).strip()
         
-        if database.drop_table(table_name):
-            return {"message": f"Table '{table_name}' dropped"}
-        else:
-            return {"error": f"Table '{table_name}' not found"}
-    
-    def _parse_where_clause(self, where_clause: str) -> Dict:
-        """Parse WHERE clause into conditions dict (legacy)"""
-        where = {}
-        # Simple equality conditions only
-        conditions = where_clause.split('AND')
-        for condition in conditions:
-            condition = condition.strip()
-            if '=' in condition:
-                left, right = condition.split('=', 1)
-                col = left.strip()
-                val = right.strip().strip("'")
-                where[col] = val
-        return where
-    
-    def _row_matches_where(self, row: Dict, where: Dict) -> bool:
-        """Check if row matches WHERE conditions (legacy)"""
-        for col, val in where.items():
-            if col not in row or str(row[col]) != val:
-                return False
-        return True
-    
-    def _parse_join(self, sql: str, database) -> Dict:
-        """Parse JOIN statement (legacy)"""
-        result = self._parse_join_structure(sql)
-        if "error" in result:
-            return result
-        
-        table1 = database.get_table(result["table_name"])
-        table2 = database.get_table(result["join"]["table"])
-        
-        if not table1:
-            return {"error": f"Table '{result['table_name']}' not found"}
-        if not table2:
-            return {"error": f"Table '{result['join']['table']}' not found"}
-        
-        # Perform join
-        results = table1.join(
-            table2, 
-            result["join"]["main_key"], 
-            result["join"]["join_key"], 
-            result["join"]["type"]
-        )
-        
-        # Apply WHERE clause if exists
-        if result["conditions"]:
-            filtered_results = []
-            for row in results:
-                if self._row_matches_where(row, result["conditions"]):
-                    filtered_results.append(row)
-            results = filtered_results
-        
         return {
-            "data": results,
-            "count": len(results),
-            "join_type": result["join"]["type"]
+            "type": "DROP_TABLE",
+            "table_name": table_name
         }
+    
+    def _parse_ledger_command(self, sql: str) -> Dict:
+        """Parse ledger-specific commands"""
+        parts = sql.split()
+        
+        if len(parts) >= 3 and parts[0].upper() == 'LEDGER':
+            
+            if parts[1].upper() == 'CREATE':
+                table_name = parts[2]
+                return {'type': 'LEDGER_CREATE', 'table': table_name}
+                
+            elif parts[1].upper() == 'APPEND' and len(parts) >= 4:
+                table_name = parts[2]
+                # Join the remaining parts
+                rest = ' '.join(parts[3:])
+                params = self._parse_key_value_pairs(rest)
+                
+                return {
+                    'type': 'LEDGER_APPEND',
+                    'table': table_name,
+                    'params': params
+                }
+                
+            elif parts[1].upper() == 'VERIFY':
+                table_name = parts[2]
+                return {'type': 'LEDGER_VERIFY', 'table': table_name}
+                
+            elif parts[1].upper() == 'AUDIT':
+                table_name = parts[2]
+                # Join the remaining parts
+                rest = ' '.join(parts[3:]) if len(parts) > 3 else ''
+                params = self._parse_key_value_pairs(rest)
+                
+                return {
+                    'type': 'LEDGER_AUDIT',
+                    'table': table_name,
+                    'params': params
+                }
+        
+        return {"type": "ERROR", "error": f"Unknown syntax: {sql}"}
+    
+    def _parse_key_value_pairs(self, text: str) -> Dict:
+        """Parse key=value pairs from text, handling quoted values"""
+        params = {}
+        
+        if not text:
+            return params
+        
+        # Use shlex to properly handle quoted strings
+        try:
+            lexer = shlex.shlex(text, posix=True)
+            lexer.whitespace = ' '
+            lexer.whitespace_split = True
+            tokens = list(lexer)
+            
+            for token in tokens:
+                if '=' in token:
+                    key, value = token.split('=', 1)
+                    # Remove quotes if present
+                    if (value.startswith("'") and value.endswith("'")) or \
+                       (value.startswith('"') and value.endswith('"')):
+                        value = value[1:-1]
+                    params[key.lower()] = value
+                    
+        except Exception:
+            # Fallback: simple split
+            for part in text.split():
+                if '=' in part:
+                    key, value = part.split('=', 1)
+                    # Remove quotes if present
+                    if (value.startswith("'") and value.endswith("'")) or \
+                       (value.startswith('"') and value.endswith('"')):
+                        value = value[1:-1]
+                    params[key.lower()] = value
+        
+        return params

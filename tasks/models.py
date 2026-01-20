@@ -1,10 +1,32 @@
-# tasks/models.py
 from django.db import models
 import uuid
 from django.core.validators import MinValueValidator
 from users.models import User, Account
 
-class Transaction(models.Model):
+
+try:
+    from .audit_mixins import AuditableModel, LedgerTrackedModel
+except (ImportError, SyntaxError):
+    
+    class AuditableModel(models.Model):
+        class Meta:
+            abstract = True
+        def log_change(self, *args, **kwargs):
+            pass
+    
+    class LedgerTrackedModel(models.Model):
+        ledger_event_id = models.CharField(max_length=100, blank=True, null=True)
+        ledger_hash = models.CharField(max_length=64, blank=True, null=True)
+        class Meta:
+            abstract = True
+
+# Import rdbms_service directly
+try:
+    from services import rdbms_service
+except ImportError:
+    rdbms_service = None
+
+class Transaction(LedgerTrackedModel, AuditableModel):
     """
     Core financial transaction model for PesaPal
     """
@@ -46,21 +68,6 @@ class Transaction(models.Model):
     currency = models.CharField(
         max_length=3,
         default='KES'
-    )
-    
-    exchange_rate = models.DecimalField(
-        max_digits=10,
-        decimal_places=6,
-        default=1.000000,
-        help_text="Exchange rate if currency conversion occurred"
-    )
-    
-    converted_amount = models.DecimalField(
-        max_digits=15,
-        decimal_places=2,
-        null=True,
-        blank=True,
-        help_text="Amount after currency conversion"
     )
     
     # Transaction type
@@ -165,161 +172,68 @@ class Transaction(models.Model):
         verbose_name = "Transaction"
         verbose_name_plural = "Transactions"
         ordering = ['-initiated_at']
-        indexes = [
-            models.Index(fields=['transaction_id']),
-            models.Index(fields=['from_account', 'initiated_at']),
-            models.Index(fields=['to_account', 'initiated_at']),
-            models.Index(fields=['status', 'initiated_at']),
-            models.Index(fields=['transaction_type', 'initiated_at']),
-        ]
-        constraints = [
-            models.CheckConstraint(
-                condition=models.Q(amount__gt=0),  # CHANGED: check → condition
-                name='positive_amount'
-            ),
-        ]
     
     def __str__(self):
         return f"{self.transaction_id}: {self.amount} {self.currency} ({self.status})"
+    
+    def save(self, *args, **kwargs):
+        """Override save to record to ledger when completed"""
+        is_new = self._state.adding
+        
+        super().save(*args, **kwargs)
+        
+        # Log the change
+        self.log_change('CREATE' if is_new else 'UPDATE', user=self.initiated_by)
+        
+        # Record to ledger if completed
+        if self.status == 'COMPLETED' and not self.ledger_event_id:
+            self.record_to_ledger(user=self.initiated_by)
+    
+    def to_ledger_format(self):
+        """Convert transaction to ledger format"""
+        return {
+            'id': str(self.id),
+            'transaction_id': self.transaction_id,
+            'amount': float(self.amount),
+            'currency': self.currency,
+            'from_account': str(self.from_account.account_number),
+            'to_account': str(self.to_account.account_number),
+            'status': self.status,
+            'transaction_type': self.transaction_type,
+            'description': self.description,
+            'metadata': {
+                'fee_amount': float(self.fee_amount),
+                'tax_amount': float(self.tax_amount),
+                'net_amount': float(self.net_amount),
+                'payment_method': self.payment_method
+            }
+        }
 
+# Keep other models simple for now
 class Invoice(models.Model):
-    """
-    Invoice model for merchant payments
-    """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    
     invoice_number = models.CharField(max_length=100, unique=True)
-    
-    # Merchant who created the invoice
-    merchant = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='invoices',
-        limit_choices_to={'is_staff': False}  # Regular merchants, not staff
-    )
-    
-    # Customer details
+    merchant = models.ForeignKey(User, on_delete=models.CASCADE, related_name='invoices')
     customer_name = models.CharField(max_length=200)
     customer_email = models.EmailField()
-    customer_phone = models.CharField(max_length=20, blank=True)
-    
-    # Invoice details
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     currency = models.CharField(max_length=3, default='KES')
-    
-    # Status
-    STATUS_CHOICES = [
-        ('DRAFT', 'Draft'),
-        ('SENT', 'Sent'),
-        ('VIEWED', 'Viewed'),
-        ('PAID', 'Paid'),
-        ('OVERDUE', 'Overdue'),
-        ('CANCELLED', 'Cancelled'),
-        ('PARTIALLY_PAID', 'Partially Paid'),
-    ]
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default='DRAFT'
-    )
-    
-    # Dates
+    status = models.CharField(max_length=20, default='DRAFT')
     issue_date = models.DateField(auto_now_add=True)
     due_date = models.DateField()
-    paid_date = models.DateTimeField(null=True, blank=True)
-    
-    # Payment tracking
-    paid_amount = models.DecimalField(
-        max_digits=15,
-        decimal_places=2,
-        default=0.00
-    )
-    
-    remaining_amount = models.DecimalField(
-        max_digits=15,
-        decimal_places=2,
-        default=0.00
-    )
-    
-    # Items
-    items = models.JSONField(
-        default=list,
-        help_text="List of invoice items in JSON format"
-    )
-    
-    # Metadata
-    notes = models.TextField(blank=True)
-    terms_and_conditions = models.TextField(blank=True)
-    
-    # Transaction reference (if paid)
-    transaction = models.ForeignKey(
-        Transaction,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='invoices'
-    )
-    
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        verbose_name = "Invoice"
-        verbose_name_plural = "Invoices"
-        ordering = ['-issue_date']
     
     def __str__(self):
-        return f"Invoice {self.invoice_number} - {self.amount} {self.currency}"
+        return f"Invoice {self.invoice_number}"
 
 class AuditLog(models.Model):
-    """
-    Audit log for tracking all financial activities
-    """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    
-    # What was changed
     model_name = models.CharField(max_length=100)
     object_id = models.CharField(max_length=100)
-    
-    # Who changed it
-    user = models.ForeignKey(
-        User,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True
-    )
-    
-    # Change details
-    action = models.CharField(
-        max_length=50,
-        choices=[
-            ('CREATE', 'Create'),
-            ('UPDATE', 'Update'),
-            ('DELETE', 'Delete'),
-            ('VIEW', 'View'),
-            ('APPROVE', 'Approve'),
-            ('REJECT', 'Reject'),
-        ]
-    )
-    
-    changes = models.JSONField(
-        help_text="JSON representation of changes"
-    )
-    
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    action = models.CharField(max_length=50)
+    changes = models.JSONField()
     ip_address = models.GenericIPAddressField(null=True, blank=True)
-    user_agent = models.TextField(blank=True)
-    
     timestamp = models.DateTimeField(auto_now_add=True)
     
-    class Meta:
-        verbose_name = "Audit Log"
-        verbose_name_plural = "Audit Logs"
-        ordering = ['-timestamp']
-        indexes = [
-            models.Index(fields=['model_name', 'object_id']),
-            models.Index(fields=['user', 'timestamp']),
-            models.Index(fields=['action', 'timestamp']),
-        ]
-    
     def __str__(self):
-        return f"{self.action} on {self.model_name} by {self.user}"
+        return f"{self.action} on {self.model_name}"

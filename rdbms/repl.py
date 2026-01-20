@@ -1,150 +1,230 @@
-"""
-Interactive REPL for the RDBMS
-"""
-import cmd
-from .database import Database
-from .parser import SQLParser
-from typing import Dict, List, Any 
+import sys
+import os
+import json
 
-class REPL(cmd.Cmd):
-    """Interactive SQL REPL"""
-    
-    intro = "Welcome to SimpleRDBMS REPL. Type 'help' or '?' for commands."
-    prompt = "rdbms> "
-    
-    
+try:
+    from rdbms.database import Database
+    from rdbms.ledger import ledger_db
+except ImportError:
+    from .database import Database
+    from .ledger import ledger_db
+
+class REPL:
     def __init__(self):
-        super().__init__()
-        self.db = Database("repl_db")
-        self._initialize_demo_data()  
-    
-    def _initialize_demo_data(self):
-        """Initialize the REPL with demo tables and data"""
-        # Only create if they don't exist
-        if 'users' not in self.db.tables:
-            print("Initializing demo database...")
-            
-            # Create users table
-            self.db.create_table('users', {
-                'id': 'INTEGER',
-                'name': 'TEXT',
-                'email': 'TEXT',
-                'role': 'TEXT'
-            }, primary_key='id', unique_keys=['email'])
-            
-            # Create tasks table
-            self.db.create_table('tasks', {
-                'id': 'INTEGER',
-                'user_id': 'INTEGER',
-                'title': 'TEXT',
-                'description': 'TEXT',
-                'status': 'TEXT',
-                'priority': 'TEXT'
-            }, primary_key='id')
-            
-            # Insert sample data
-            self.db.insert('users', {'id': 1, 'name': 'John Doe', 'email': 'john@example.com', 'role': 'admin'})
-            self.db.insert('users', {'id': 2, 'name': 'Jane Smith', 'email': 'jane@example.com', 'role': 'user'})
-            
-            self.db.insert('tasks', {'id': 1, 'user_id': 1, 'title': 'Design database', 'description': 'Create ERD', 'status': 'completed', 'priority': 'high'})
-            self.db.insert('tasks', {'id': 2, 'user_id': 2, 'title': 'Write tests', 'description': 'Unit tests', 'status': 'pending', 'priority': 'medium'})
-            
-            self.db.save()
-            print("Demo database ready!")
+        self.db = Database()
+        self.running = True
         
-    def do_exec(self, arg):
-        """Execute SQL command: exec <sql>"""
-        if not arg:
-            print("Usage: exec <sql_command>")
+    def show_help(self):
+        help_text = """
+        Available Commands:
+        
+        SQL COMMANDS:
+          CREATE TABLE <name> (col1 TYPE, col2 TYPE, ...)
+          INSERT INTO <table> VALUES (val1, val2, ...)
+          SELECT * FROM <table> [WHERE condition]
+          UPDATE <table> SET col=value [WHERE condition]
+          DELETE FROM <table> [WHERE condition]
+          DROP TABLE <table>
+          SHOW TABLES
+          
+        LEDGER COMMANDS:
+          LEDGER CREATE <table_name>           - Create immutable ledger table
+          LEDGER APPEND <table> TYPE='type'    - Append event to ledger
+                    DATA='{"json":"data"}' 
+                    [AGGREGATE='id']
+          LEDGER VERIFY <table>                - Verify ledger integrity
+          LEDGER AUDIT <table> [AGGREGATE='id'] - Audit events
+          
+        SYSTEM COMMANDS:
+          .tables      - List all tables
+          .ledgers     - List all ledger tables
+          .exit/.quit  - Exit REPL
+          .help/?      - Show this help
+        """
+        print(help_text)
+    
+    def handle_command(self, command):
+        # Handle system commands first
+        if command.lower() in ['.exit', '.quit', 'exit', 'quit']:
+            self.running = False
+            print("Goodbye!")
             return
         
-        result = self.db.execute(arg)
-        self._print_result(result)
-    
-    def do_select(self, arg):
-        """Execute SELECT: select <sql_select>"""
-        if not arg:
-            print("Usage: select <sql_select_statement>")
+        elif command.lower() in ['.help', 'help', '?']:
+            self.show_help()
             return
         
-        result = self.db.execute(f"SELECT {arg}")
-        self._print_result(result)
-    
-    def do_insert(self, arg):
-        """Execute INSERT: insert <sql_insert>"""
-        if not arg:
-            print("Usage: insert <sql_insert_statement>")
+        elif command == '.tables':
+            tables = self.db.list_tables()
+            if tables:
+                print("Tables in database:")
+                for table in tables:
+                    print(f"  - {table}")
+            else:
+                print("No tables in database.")
             return
         
-        result = self.db.execute(f"INSERT INTO {arg}")
-        self._print_result(result)
-    
-    def do_tables(self, arg):
-        """List all tables"""
-        tables = self.db.list_tables()
-        if tables:
-            print("Tables:")
-            for table in tables:
-                print(f"  {table}")
-        else:
-            print("No tables in database")
-    
-    def do_describe(self, arg):
-        """Describe table structure: describe <table_name>"""
-        if not arg:
-            print("Usage: describe <table_name>")
+        elif command == '.ledgers':
+            tables = ledger_db.list_tables()
+            if tables:
+                print("Ledger Tables:")
+                for table in tables:
+                    print(f"  - {table}")
+            else:
+                print("No ledger tables exist.")
             return
         
-        table = self.db.get_table(arg)
-        if not table:
-            print(f"Table '{arg}' not found")
-            return
-        
-        desc = table.describe()
-        print(f"Table: {desc['name']}")
-        print(f"Rows: {desc['row_count']}")
-        print(f"Primary Key: {desc['primary_key']}")
-        print(f"Unique Keys: {desc['unique_keys']}")
-        print("\nColumns:")
-        for col, typ in desc['columns'].items():
-            print(f"  {col}: {typ}")
-    
-    def do_save(self, arg):
-        """Save database to disk"""
-        self.db.save()
-        print("Database saved")
-    
-    def do_exit(self, arg):
-        """Exit the REPL"""
-        print("Goodbye!")
-        return True
-    
-    def _print_result(self, result: Dict):
-        """Print query result"""
-        if "error" in result:
-            print(f"Error: {result['error']}")
-        elif "data" in result:
-            data = result["data"]
-            if not data:
-                print("No rows returned")
+        # Execute the command
+        try:
+            # Parse the command first
+            parsed = self.db.parser.parse(command)
+            
+            if not parsed:
+                print(f"*** Unknown syntax: {command}")
                 return
             
-            # Print as table
-            headers = list(data[0].keys())
-            print(" | ".join(headers))
-            print("-" * (sum(len(str(h)) for h in headers) + 3 * len(headers)))
-            
-            for row in data:
-                values = [str(row.get(h, "")) for h in headers]
-                print(" | ".join(values))
-            
-            print(f"\n{len(data)} row(s) returned")
+            # Handle SHOW TABLES and ledger commands separately
+            if parsed.get('type') == 'SHOW_TABLES':
+                self._handle_show_tables()
+                return
+            elif parsed.get('type', '').startswith('LEDGER_'):
+                self._handle_ledger_command(parsed)
+                return
+            else:
+                # Handle regular SQL commands
+                result = self.db.execute(command)
+                self._handle_sql_result(result)
+                
+        except Exception as e:
+            print(f"Error: {e}")
+    
+    def _handle_show_tables(self):
+        """Handle SHOW TABLES command"""
+        tables = self.db.list_tables()
+        if tables:
+            print("Tables in database:")
+            for table in tables:
+                print(f"  - {table}")
         else:
-            print(result.get("message", "Command executed"))
+            print("No tables in database.")
+    
+    def _handle_ledger_command(self, parsed):
+        """Handle ledger-specific commands"""
+        cmd_type = parsed.get('type')
+        
+        if cmd_type == 'LEDGER_CREATE':
+            table_name = parsed['table']
+            try:
+                table = ledger_db.create_table(table_name)
+                print(f"✓ Ledger table '{table_name}' created successfully")
+            except ValueError as e:
+                print(f"Error: {e}")
+                
+        elif cmd_type == 'LEDGER_APPEND':
+            table_name = parsed['table']
+            params = parsed.get('params', {})
+            
+            table = ledger_db.get_table(table_name)
+            if not table:
+                print(f"Error: Ledger table '{table_name}' not found")
+                return
+            
+            # Parse JSON data
+            try:
+                data = json.loads(params.get('data', '{}'))
+            except json.JSONDecodeError:
+                print(f"Error: Invalid JSON data: {params.get('data')}")
+                return
+            
+            event_id, event_hash = table.append_event(
+                event_type=params.get('type', 'EVENT'),
+                data=data,
+                aggregate_id=params.get('aggregate')
+            )
+            
+            print(f"✓ Event appended. ID: {event_id}, Hash: {event_hash[:16]}...")
+            
+        elif cmd_type == 'LEDGER_VERIFY':
+            table_name = parsed['table']
+            table = ledger_db.get_table(table_name)
+            if not table:
+                print(f"Error: Ledger table '{table_name}' not found")
+                return
+            
+            result = table.verify_chain()
+            if result['valid']:
+                print(f"✓ Ledger chain valid for '{table_name}' ({result['total_events']} events)")
+            else:
+                print(f"✗ Ledger chain INVALID for '{table_name}'. {len(result['invalid_events'])} corrupt events")
+                
+        elif cmd_type == 'LEDGER_AUDIT':
+            table_name = parsed['table']
+            params = parsed.get('params', {})
+            
+            table = ledger_db.get_table(table_name)
+            if not table:
+                print(f"Error: Ledger table '{table_name}' not found")
+                return
+            
+            aggregate_id = params.get('aggregate')
+            events = table.get_events(aggregate_id)
+            
+            if aggregate_id:
+                print(f"Audit for '{aggregate_id}' in table '{table_name}':")
+            else:
+                print(f"Audit for table '{table_name}':")
+            
+            if not events:
+                print("  No events found")
+            else:
+                for event in events[-10:]:  # Show last 10 events
+                    print(f"  [{event['id']}] {event['event_type']}: {event['data']}")
+    
+    def _handle_sql_result(self, result):
+        """Handle SQL command results"""
+        if result['status'] == 'success':
+            if result['data'] is not None:
+                if isinstance(result['data'], list):
+                    print(f"Rows: {result['count']}")
+                    for row in result['data']:
+                        print(f"  {row}")
+                else:
+                    print(result['message'])
+            else:
+                print(result['message'])
+        elif result['status'] == 'error':
+            print(f"Error: {result['message']}")
+    
+    def run(self):
+        print("Welcome to SimpleRDBMS REPL. Type 'help' or '?' for commands.")
+        
+        while self.running:
+            try:
+                user_input = input("rdbms> ").strip()
+                
+                if not user_input:
+                    continue
+                
+                self.handle_command(user_input)
+                
+            except KeyboardInterrupt:
+                print("\nUse '.exit' or '.quit' to exit")
+                self.running = False
+            except EOFError:
+                print("\nGoodbye!")
+                break
+            except Exception as e:
+                print(f"Unexpected error: {e}")
 
 def main():
     repl = REPL()
-    repl.cmdloop()
+    repl.run()
 
 if __name__ == "__main__":
-    main()
+    # This prevents the warning when running as module
+    if __package__ is None:
+        # Running as script
+        main()
+    else:
+        # Running as module
+        main()

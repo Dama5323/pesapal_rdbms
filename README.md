@@ -104,6 +104,21 @@ pesapal_rdbms/
 └── README.md # This file
 ```
 
+## Core Components
+
+### **RDBMS Engine** (`rdbms/`)
+- `database.py` - Main database class with transaction management
+- `table.py` - Table implementation with indexing and constraints  
+- `parser.py` - SQL-like command parser
+- `storage.py` - JSON persistence with atomic writes
+- `repl.py` - Interactive SQL shell
+
+### **Web Application** (`web/`)
+- Django REST API with full CRUD operations
+- Service layer abstraction for RDBMS integration
+- Real-time monitoring and statistics
+- SQL execution interface
+
 ---
 
 ## Quick Start

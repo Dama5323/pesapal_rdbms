@@ -16,7 +16,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from . import views  # Import the views module from the same directory
+from . import views  
+from django.http import JsonResponse 
+from web.rdbms_admin import rdbms_admin_site
+import tasks.views as tasks_views
+
 
 urlpatterns = [
     # Admin
@@ -25,6 +29,7 @@ urlpatterns = [
     # Users and Tasks API endpoints  
     path('api/users/', include('users.urls')),
     path('api/tasks/', include('tasks.urls')),
+    path('rdbms-admin/', rdbms_admin_site.urls, name='rdbms_admin'),
 
     # API Documentation 
     path('api/docs/', views.api_docs, name='api_docs'),
@@ -47,6 +52,30 @@ urlpatterns = [
     
     # Health check endpoint
     path('health/', lambda request: JsonResponse({'status': 'healthy'})),
+
+    # API URLs for RDBMS Integration
+    path('api/transactions/create/', tasks_views.create_transaction, name='create_transaction'),
+    path('api/transactions/<str:transaction_id>/audit/', tasks_views.transaction_audit, name='transaction_audit'),
+    path('api/ledgers/verify/', tasks_views.verify_all_ledgers, name='verify_ledgers'),
+    path('api/financial/sql/', tasks_views.execute_financial_sql, name='execute_financial_sql'),
+    path('api/financial/report/', tasks_views.financial_report, name='financial_report'),
+    
+    # Simple admin endpoints
+    path('admin/rdbms/status/', tasks_views.admin_rdbms_status, name='admin_rdbms_status'),
+    path('admin/rdbms/verify/', tasks_views.admin_verify_ledgers, name='admin_verify_ledgers'),
+    path('admin/sql/', tasks_views.admin_sql_executor, name='admin_sql_executor'),
+
+     # Simple status page
+    path('', lambda request: JsonResponse({
+        'status': 'PesaPal RDBMS API',
+        'endpoints': {
+            'admin': '/admin/',
+            'rdbms_admin': '/rdbms-admin/',
+            'create_transaction': '/api/transactions/create/',
+            'verify_ledgers': '/api/ledgers/verify/',
+            'financial_report': '/api/financial/report/'
+        }
+    }), name='home'),
 ]
 
 # Error handlers

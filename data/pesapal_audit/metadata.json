@@ -1,0 +1,37 @@
+{
+  "name": "pesapal_audit",
+  "tables": {
+    "audit_logs": {
+      "columns": {
+        "id": "TEXT",
+        "model_name": "TEXT",
+        "object_id": "TEXT",
+        "action": "TEXT",
+        "user_id": "TEXT",
+        "changes": "TEXT",
+        "ip_address": "TEXT",
+        "user_agent": "TEXT",
+        "timestamp": "DATETIME"
+      },
+      "primary_key": null,
+      "unique_keys": [],
+      "row_count": 0
+    },
+    "transaction_ledger": {
+      "columns": {
+        "id": "TEXT",
+        "transaction_id": "TEXT",
+        "amount": "FLOAT",
+        "currency": "TEXT",
+        "from_account": "TEXT",
+        "to_account": "TEXT",
+        "status": "TEXT",
+        "timestamp": "DATETIME",
+        "metadata": "TEXT"
+      },
+      "primary_key": null,
+      "unique_keys": [],
+      "row_count": 0
+    }
+  }
+}

@@ -113,6 +113,7 @@ class Database:
     
     # === SQL EXECUTION ===
     
+    
     def execute(self, sql: str) -> Dict[str, Any]:
         """
         Execute SQL statement and return results
@@ -129,7 +130,39 @@ class Database:
             # Parse the SQL
             parsed = self.parser.parse(sql)
             
-            if parsed['type'] == 'CREATE_TABLE':
+            if parsed is None or 'type' not in parsed:
+                return {
+                    'status': 'error',
+                    'message': f'Unknown syntax: {sql}'
+                }
+            
+            # Handle SHOW TABLES
+            if parsed.get('type') == 'SHOW_TABLES':
+                tables = self.list_tables()
+                return {
+                    'status': 'success',
+                    'message': f'Found {len(tables)} table(s)',
+                    'data': tables,
+                    'count': len(tables)
+                }
+            
+            # Handle DROP TABLE
+            elif parsed.get('type') == 'DROP_TABLE':
+                table_name = parsed['table_name']
+                success = self.drop_table(table_name)
+                if success:
+                    return {
+                        'status': 'success',
+                        'message': f'Table "{table_name}" dropped',
+                        'data': None
+                    }
+                else:
+                    return {
+                        'status': 'error',
+                        'message': f'Table "{table_name}" not found'
+                    }
+            
+            elif parsed.get('type') == 'CREATE_TABLE':
                 table_name = parsed['table_name']
                 columns = parsed['columns']
                 primary_key = parsed.get('primary_key')
@@ -142,7 +175,7 @@ class Database:
                     'data': None
                 }
                 
-            elif parsed['type'] == 'INSERT':
+            elif parsed.get('type') == 'INSERT':
                 table_name = parsed['table_name']
                 values = parsed['values']
                 
@@ -153,7 +186,7 @@ class Database:
                     'data': None
                 }
                 
-            elif parsed['type'] == 'SELECT':
+            elif parsed.get('type') == 'SELECT':
                 table_name = parsed['table_name']
                 conditions = parsed.get('conditions', {})
                 join_info = parsed.get('join', None)
@@ -181,7 +214,7 @@ class Database:
                     'count': len(result)
                 }
                 
-            elif parsed['type'] == 'UPDATE':
+            elif parsed.get('type') == 'UPDATE':
                 table_name = parsed['table_name']
                 updates = parsed['updates']
                 conditions = parsed.get('conditions', {})
@@ -193,7 +226,7 @@ class Database:
                     'data': None
                 }
                 
-            elif parsed['type'] == 'DELETE':
+            elif parsed.get('type') == 'DELETE':
                 table_name = parsed['table_name']
                 conditions = parsed.get('conditions', {})
                 
@@ -204,10 +237,16 @@ class Database:
                     'data': None
                 }
                 
+            elif parsed.get('type') == 'ERROR':
+                return {
+                    'status': 'error',
+                    'message': parsed.get('error', 'Unknown parser error')
+                }
+                
             else:
                 return {
                     'status': 'error',
-                    'message': f'Unsupported SQL type: {parsed["type"]}'
+                    'message': f'Unsupported SQL type: {parsed.get("type")}'
                 }
                 
         except Exception as e:

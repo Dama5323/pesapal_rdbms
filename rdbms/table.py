@@ -4,7 +4,6 @@ Table implementation with CRUD, indexing, and constraints
 from typing import Dict, List, Any, Optional, Set
 import re
 
-from certifi import where
 
 class Table:
     """Represents a database table"""

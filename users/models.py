@@ -3,16 +3,17 @@ from django.db import models
 import uuid
 from django.core.validators import MinLengthValidator, RegexValidator
 
-class User(AbstractUser):
+
+class User(AbstractUser):  
     """
     Custom User model for PesaPal with financial-specific fields
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-    # Override groups and user_permissions to avoid E304 clashes
+   
     groups = models.ManyToManyField(
         Group,
-        related_name='custom_user_set',  # unique name
+        related_name='custom_user_set',  
         blank=True,
         help_text='The groups this user belongs to.',
         verbose_name='groups'
@@ -20,7 +21,7 @@ class User(AbstractUser):
 
     user_permissions = models.ManyToManyField(
         Permission,
-        related_name='custom_user_permissions_set',  # unique name
+        related_name='custom_user_permissions_set',  
         blank=True,
         help_text='Specific permissions for this user.',
         verbose_name='user permissions'
@@ -70,6 +71,34 @@ class User(AbstractUser):
 
     def __str__(self):
         return f"{self.username} - {self.phone_number}"
+    
+    def save(self, *args, **kwargs):
+        """Override save to add audit logging"""
+        is_new = self._state.adding
+        super().save(*args, **kwargs)
+        
+        # Try to log audit if service is available
+        try:
+            from services import rdbms_service
+            changes = {
+                'model': 'User',
+                'object_id': str(self.id),
+                'action': 'CREATE' if is_new else 'UPDATE',
+                'fields': {
+                    'username': self.username,
+                    'email': self.email,
+                    'kyc_status': self.kyc_status
+                }
+            }
+            rdbms_service.log_audit(
+                model_name='User',
+                object_id=str(self.id),
+                action='CREATE' if is_new else 'UPDATE',
+                user_id=str(self.id) if not is_new else 'system',
+                changes=changes
+            )
+        except ImportError:
+            pass  # Silently fail if service not available
 
 
 class UserProfile(models.Model):
@@ -131,6 +160,7 @@ class UserProfile(models.Model):
     def __str__(self):
         return f"Profile for {self.user.username}"
 
+
 class Account(models.Model):
     """
     Financial account for users (like bank account)
@@ -140,6 +170,21 @@ class Account(models.Model):
         User,
         on_delete=models.CASCADE,
         related_name='accounts'
+    )
+    
+    # LEDGER FIELDS
+    ledger_event_id = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="Immutable ledger event ID for balance changes"
+    )
+    
+    ledger_hash = models.CharField(
+        max_length=64,
+        blank=True,
+        null=True,
+        help_text="Cryptographic hash from ledger"
     )
     
     # Account details
@@ -239,4 +284,55 @@ class Account(models.Model):
         
     def __str__(self):
         return f"{self.account_number} - {self.user.username} ({self.balance} {self.currency})"
+    
+    def save(self, *args, **kwargs):
+        """Override save to record balance changes to ledger"""
+        # Check if this is an update and balance changed
+        if self.pk:
+            old_account = Account.objects.get(pk=self.pk)
+            balance_changed = old_account.balance != self.balance
+        else:
+            balance_changed = False
             
+        super().save(*args, **kwargs)
+        
+        # Record balance change to ledger
+        if balance_changed:
+            self.record_balance_change_to_ledger(old_account.balance)
+    
+    def record_balance_change_to_ledger(self, old_balance):
+        """Record balance change to immutable ledger"""
+        try:
+            from services import rdbms_service
+            
+            transaction_data = {
+                'id': str(self.id) + '_' + str(uuid.uuid4())[:8],
+                'transaction_id': f'BALANCE_{self.account_number}_{uuid.uuid4().hex[:8]}',
+                'amount': float(self.balance - old_balance),
+                'currency': self.currency,
+                'from_account': 'system' if self.balance > old_balance else self.account_number,
+                'to_account': self.account_number if self.balance > old_balance else 'system',
+                'status': 'COMPLETED',
+                'type': 'BALANCE_ADJUSTMENT',
+                'metadata': {
+                    'account': self.account_number,
+                    'old_balance': float(old_balance),
+                    'new_balance': float(self.balance),
+                    'change': float(self.balance - old_balance),
+                    'reason': 'balance_adjustment'
+                }
+            }
+            
+            result = rdbms_service.record_transaction(transaction_data)
+            
+            if result.get('success'):
+                self.ledger_event_id = result.get('ledger_event_id')
+                self.ledger_hash = result.get('hash')
+                # Save without triggering save() again
+                Account.objects.filter(pk=self.pk).update(
+                    ledger_event_id=self.ledger_event_id,
+                    ledger_hash=self.ledger_hash
+                )
+                
+        except ImportError:
+            pass  # Silently fail if service not available

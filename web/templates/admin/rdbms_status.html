@@ -1,0 +1,73 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<div id="content-main">
+    <h1>RDBMS Status</h1>
+    
+    {% if error %}
+        <div class="errornote">{{ error }}</div>
+    {% endif %}
+    
+    <div class="module">
+        <h2>Database Tables</h2>
+        <table style="width: 100%;">
+            <thead>
+                <tr>
+                    <th>Table Name</th>
+                    <th>Record Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for table in tables %}
+                <tr class="row{% cycle '1' '2' %}">
+                    <td>{{ table }}</td>
+                    <td>{{ table_counts|get_item:table|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="2">No tables found</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="module">
+        <h2>Ledger Tables</h2>
+        <ul>
+            {% for table in ledger_tables %}
+            <li>{{ table }}</li>
+            {% empty %}
+            <li>No ledger tables found</li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+    <div class="module">
+        <h2>Ledger Verification</h2>
+        <table style="width: 100%;">
+            <thead>
+                <tr>
+                    <th>Table</th>
+                    <th>Status</th>
+                    <th>Events</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for table, result in verification.items %}
+                <tr>
+                    <td>{{ table }}</td>
+                    <td>
+                        {% if result.valid %}
+                        <span style="color: green;">✓ Valid</span>
+                        {% else %}
+                        <span style="color: red;">✗ Invalid</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ result.total_events }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
