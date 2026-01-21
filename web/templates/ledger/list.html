@@ -358,7 +358,7 @@
             return;
         }
         
-        alert(`Verifying ledger ${ledgerId}...\n\nThis feature is coming soon.`);
+        alert('Verifying ledger ' + ledgerId + '...\n\nThis feature is coming soon.');
     }
     
     function exportLedger(ledgerId) {
@@ -367,12 +367,7 @@
             return;
         }
         
-        alert(`Exporting ledger ${ledgerId}...\n\nThis feature is coming soon.`);
+        alert('Exporting ledger ' + ledgerId + '...\n\nThis feature is coming soon.');
     }
 </script>
-{% endblock %} 
-{% extends 'base.html' %}
-
-{% block title %}Register - PesaPal RDBMS{% endblock %}
-
-{% block content %}
+{% endblock %}

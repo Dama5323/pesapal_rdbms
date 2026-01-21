@@ -14,6 +14,10 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+"""
+URL configuration for web project.
+"""
+
 from django.contrib import admin
 from django.urls import path, include
 from . import views  
@@ -21,8 +25,30 @@ from django.http import JsonResponse
 from web.rdbms_admin import rdbms_admin_site
 import tasks.views as tasks_views
 from django.contrib.auth import views as auth_views
-from django.contrib.auth.views import LogoutView
+from django.contrib.auth import logout as auth_logout
+from django.contrib import messages
+from django.shortcuts import redirect
+from django.views.decorators.http import require_POST, require_GET
+from django.views.decorators.csrf import csrf_exempt
+from django.shortcuts import render
 
+@require_GET
+def logout_get_view(request):
+    """Handle GET requests for logout (redirects to POST form)"""
+    return render(request, 'auth/logout_confirmation.html')
+
+@require_POST
+def logout_post_view(request):
+    """Handle POST requests for logout"""
+    auth_logout(request)
+    messages.success(request, 'You have been logged out successfully.')
+    return redirect('home')
+
+def logout_view(request):
+    """Handle both GET and POST for logout"""
+    if request.method == 'POST':
+        return logout_post_view(request)
+    return logout_get_view(request)
 
 urlpatterns = [
     # Admin
@@ -36,21 +62,15 @@ urlpatterns = [
     # API Documentation 
     path('api/docs/', views.api_docs, name='api_docs'),
     
-    # Dashboard and main pages
-    path('', views.dashboard, name='dashboard'),
-    path('home/', views.home, name='home'),
+    # Main pages
+    path('', views.home, name='home'),
     path('dashboard/', views.dashboard, name='dashboard'),
     
     # API Documentation
     path('docs/', views.api_docs, name='api_docs'),
-    path('api-docs/', views.api_docs, name='api_docs'),
     
     # SQL Executor
     path('sql/', views.sql_executor, name='sql_executor'),
-    path('sql-executor/', views.sql_executor, name='sql_executor'),
-    
-    # Include your API app URLs (if you have a separate app for API)
-    # path('api/', include('api.urls')),
     
     # Health check endpoint
     path('health/', lambda request: JsonResponse({'status': 'healthy'})),
@@ -62,23 +82,25 @@ urlpatterns = [
     path('api/financial/sql/', tasks_views.execute_financial_sql, name='execute_financial_sql'),
     path('api/financial/report/', tasks_views.financial_report, name='financial_report'),
     
-    # Main pages
-    path('', views.home, name='home'),
-    path('dashboard/', views.dashboard, name='dashboard'),
+    # Transaction pages
     path('transactions/', views.transactions_view, name='transactions'),
     path('transactions/create/', views.create_transaction_view, name='create_transaction'),
+    
+    # Ledger and Audit
     path('ledger/', views.ledger_view, name='ledger'),
     path('audit/', views.audit_view, name='audit'),
+    
+    # Reports and Profile
     path('reports/', views.reports_view, name='reports'),
     path('profile/', views.profile_view, name='profile'),
     
     # Auth pages
     path('login/', views.login_view, name='login'),
     path('register/', views.register_view, name='register'),
-    path('logout/', LogoutView.as_view(next_page='home'), name='logout'),
+    path('logout/', logout_view, name='logout'),
     
-     # Simple status page
-    path('', lambda request: JsonResponse({
+    # Status page (only for API root)
+    path('api/', lambda request: JsonResponse({
         'status': 'PesaPal RDBMS API',
         'endpoints': {
             'admin': '/admin/',
@@ -87,7 +109,7 @@ urlpatterns = [
             'verify_ledgers': '/api/ledgers/verify/',
             'financial_report': '/api/financial/report/'
         }
-    }), name='home'),
+    }), name='api_root'),
 ]
 
 # Error handlers

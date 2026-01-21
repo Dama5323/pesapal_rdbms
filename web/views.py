@@ -497,22 +497,20 @@ def register_view(request):
             else:
                 try:
                     # Create user with custom User model
-                    # Note: NO username parameter - email is the username
                     user = User.objects.create_user(
-                        email=email,  # This is the USERNAME_FIELD
+                        email=email,
                         password=password,
                         first_name=first_name,
                         last_name=last_name,
                         phone_number=phone_number or None,
-                        # Add other fields if needed
                         kyc_status='pending',
-                        daily_limit=1000.00,  # Default limits
+                        daily_limit=1000.00,
                         monthly_limit=10000.00
                     )
                     
                     # Log the user in
-                    from django.contrib.auth import login
-                    login(request, user)
+                    backend = 'users.backends.EmailBackend'
+                    login(request, user, backend=backend)
                     
                     messages.success(request, 'Registration successful!')
                     return redirect('dashboard')
@@ -534,12 +532,14 @@ def login_view(request):
         if not email or not password:
             messages.error(request, 'Email and password are required')
         else:
-            # Use Django's authenticate - it will use email as username
-            # because USERNAME_FIELD = 'email' in your User model
-            user = authenticate(request, username=email, password=password)
+            # Authenticate using custom backend
+            from users.backends import EmailBackend
+            user = EmailBackend().authenticate(request, username=email, password=password)
             
             if user is not None:
-                login(request, user)
+                # Login with custom backend
+                backend = 'users.backends.EmailBackend'
+                login(request, user, backend=backend)
                 messages.success(request, 'Login successful!')
                 return redirect('dashboard')
             else:
@@ -550,9 +550,14 @@ def login_view(request):
     
     return render(request, 'auth/login.html')
 
-@require_POST
 def logout_view(request):
-    """Custom logout view that only accepts POST requests"""
+    """Handle logout with both GET and POST"""
+    if request.method == 'POST':
+        auth_logout(request)
+        messages.success(request, 'You have been logged out successfully.')
+        return redirect('home')
+    
+    # For GET requests, show confirmation or directly logout
     auth_logout(request)
     messages.success(request, 'You have been logged out successfully.')
     return redirect('home')
