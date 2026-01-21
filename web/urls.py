@@ -20,6 +20,8 @@ from . import views
 from django.http import JsonResponse 
 from web.rdbms_admin import rdbms_admin_site
 import tasks.views as tasks_views
+from django.contrib.auth import views as auth_views
+from django.contrib.auth.views import LogoutView
 
 
 urlpatterns = [
@@ -60,11 +62,21 @@ urlpatterns = [
     path('api/financial/sql/', tasks_views.execute_financial_sql, name='execute_financial_sql'),
     path('api/financial/report/', tasks_views.financial_report, name='financial_report'),
     
-    # Simple admin endpoints
-    path('admin/rdbms/status/', tasks_views.admin_rdbms_status, name='admin_rdbms_status'),
-    path('admin/rdbms/verify/', tasks_views.admin_verify_ledgers, name='admin_verify_ledgers'),
-    path('admin/sql/', tasks_views.admin_sql_executor, name='admin_sql_executor'),
-
+    # Main pages
+    path('', views.home, name='home'),
+    path('dashboard/', views.dashboard, name='dashboard'),
+    path('transactions/', views.transactions_view, name='transactions'),
+    path('transactions/create/', views.create_transaction_view, name='create_transaction'),
+    path('ledger/', views.ledger_view, name='ledger'),
+    path('audit/', views.audit_view, name='audit'),
+    path('reports/', views.reports_view, name='reports'),
+    path('profile/', views.profile_view, name='profile'),
+    
+    # Auth pages
+    path('login/', views.login_view, name='login'),
+    path('register/', views.register_view, name='register'),
+    path('logout/', LogoutView.as_view(next_page='home'), name='logout'),
+    
      # Simple status page
     path('', lambda request: JsonResponse({
         'status': 'PesaPal RDBMS API',

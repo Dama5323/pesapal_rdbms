@@ -2,15 +2,56 @@ from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.db import models
 import uuid
 from django.core.validators import MinLengthValidator, RegexValidator
+from django.utils.translation import gettext_lazy as _
+from django.contrib.auth.base_user import BaseUserManager
 
+class UserManager(BaseUserManager):
+    """Custom manager for User model with email as username"""
+    use_in_migrations = True
+
+    def create_user(self, email, password=None, **extra_fields):
+        """Create and save a regular User with the given email and password."""
+        if not email:
+            raise ValueError('The Email field must be set')
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None, **extra_fields):
+        """Create and save a SuperUser with the given email and password."""
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+
+        return self.create_user(email, password, **extra_fields)
 
 class User(AbstractUser):  
     """
     Custom User model for PesaPal with financial-specific fields
     """
+    username = None  
+    email = models.EmailField(unique=True)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []  
+
+    # IMPORTANT: Assign the custom manager
+    objects = UserManager()
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-   
+    # Note: You have email defined twice, remove this duplicate
+    # email = models.EmailField(_('email address'), unique=True)
+    
+    email = models.EmailField(_('email address'), unique=True)
+
     groups = models.ManyToManyField(
         Group,
         related_name='custom_user_set',  
@@ -70,7 +111,7 @@ class User(AbstractUser):
         ordering = ['-date_joined']
 
     def __str__(self):
-        return f"{self.username} - {self.phone_number}"
+        return f"{self.email}"
     
     def save(self, *args, **kwargs):
         """Override save to add audit logging"""
@@ -85,7 +126,6 @@ class User(AbstractUser):
                 'object_id': str(self.id),
                 'action': 'CREATE' if is_new else 'UPDATE',
                 'fields': {
-                    'username': self.username,
                     'email': self.email,
                     'kyc_status': self.kyc_status
                 }
@@ -99,7 +139,6 @@ class User(AbstractUser):
             )
         except ImportError:
             pass  # Silently fail if service not available
-
 
 class UserProfile(models.Model):
     """

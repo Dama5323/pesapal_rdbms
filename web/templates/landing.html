@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+
+{% block title %}PesaPal RDBMS - Secure Financial Transactions{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 text-center">
+            <!-- Hero Section -->
+            <div class="mb-5">
+                <div class="bg-primary bg-opacity-10 rounded-circle p-5 d-inline-block mb-4">
+                    <i class="bi bi-cash-stack display-1 text-primary"></i>
+                </div>
+                <h1 class="display-4 fw-bold mb-3">PesaPal RDBMS</h1>
+                <p class="lead text-muted mb-4">
+                    Secure, immutable financial transactions with blockchain-like ledger verification.
+                    Monitor, audit, and manage all your financial operations in one place.
+                </p>
+                <div class="d-flex justify-content-center gap-3 flex-wrap">
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'dashboard' %}" class="btn btn-primary btn-lg px-4">
+                        <i class="bi bi-speedometer2 me-2"></i> Go to Dashboard
+                    </a>
+                    <a href="{% url 'transactions' %}" class="btn btn-outline-primary btn-lg px-4">
+                        <i class="bi bi-arrow-left-right me-2"></i> View Transactions
+                    </a>
+                    {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-primary btn-lg px-4">
+                        <i class="bi bi-box-arrow-in-right me-2"></i> Sign In
+                    </a>
+                    <a href="{% url 'register' %}" class="btn btn-outline-primary btn-lg px-4">
+                        <i class="bi bi-person-plus me-2"></i> Create Account
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Features -->
+            <div class="row mt-5 pt-5">
+                <div class="col-md-4 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center p-4">
+                            <div class="bg-success bg-opacity-10 rounded-circle p-3 d-inline-block mb-3">
+                                <i class="bi bi-shield-check display-4 text-success"></i>
+                            </div>
+                            <h4 class="card-title">Immutable Ledger</h4>
+                            <p class="card-text text-muted">
+                                Every transaction is cryptographically secured in an immutable blockchain-like ledger.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center p-4">
+                            <div class="bg-info bg-opacity-10 rounded-circle p-3 d-inline-block mb-3">
+                                <i class="bi bi-graph-up display-4 text-info"></i>
+                            </div>
+                            <h4 class="card-title">Real-time Analytics</h4>
+                            <p class="card-text text-muted">
+                                Monitor transaction volumes and trends with interactive charts and reports.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center p-4">
+                            <div class="bg-warning bg-opacity-10 rounded-circle p-3 d-inline-block mb-3">
+                                <i class="bi bi-search display-4 text-warning"></i>
+                            </div>
+                            <h4 class="card-title">Audit & Verification</h4>
+                            <p class="card-text text-muted">
+                                Verify ledger integrity and audit transactions with comprehensive tools.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- How it Works -->
+            <div class="row mt-5">
+                <div class="col-12">
+                    <h3 class="text-center mb-4">How It Works</h3>
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <div class="bg-light rounded-circle p-3 d-inline-block mb-2">
+                                    <span class="badge bg-primary fs-5">1</span>
+                                </div>
+                                <h5>Create Transaction</h5>
+                                <p class="text-muted small">Initiate secure financial transactions</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <div class="bg-light rounded-circle p-3 d-inline-block mb-2">
+                                    <span class="badge bg-primary fs-5">2</span>
+                                </div>
+                                <h5>Record in Ledger</h5>
+                                <p class="text-muted small">Transaction gets immutable record</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <div class="bg-light rounded-circle p-3 d-inline-block mb-2">
+                                    <span class="badge bg-primary fs-5">3</span>
+                                </div>
+                                <h5>Verify & Audit</h5>
+                                <p class="text-muted small">Cryptographic verification ensures integrity</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <div class="bg-light rounded-circle p-3 d-inline-block mb-2">
+                                    <span class="badge bg-primary fs-5">4</span>
+                                </div>
+                                <h5>Generate Reports</h5>
+                                <p class="text-muted small">Comprehensive analytics and insights</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Call to Action -->
+            {% if not user.is_authenticated %}
+            <div class="mt-5 pt-5">
+                <div class="card bg-primary text-white">
+                    <div class="card-body p-5 text-center">
+                        <h3 class="card-title mb-3">Ready to Get Started?</h3>
+                        <p class="card-text mb-4">
+                            Join thousands of users who trust PesaPal RDBMS for their financial operations.
+                        </p>
+                        <a href="{% url 'register' %}" class="btn btn-light btn-lg">
+                            <i class="bi bi-person-plus me-2"></i> Create Free Account
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

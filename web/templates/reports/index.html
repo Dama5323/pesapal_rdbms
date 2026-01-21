@@ -1,0 +1,547 @@
+{% extends 'base.html' %}
+
+{% block title %}Financial Reports - PesaPal RDBMS{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="h2 mb-0">Financial Reports</h1>
+        <p class="text-muted">Analytics and insights for your transactions</p>
+    </div>
+</div>
+
+<!-- Report Filters -->
+<div class="card dashboard-card mb-4">
+    <div class="card-body">
+        <form id="reportFilters" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Report Type</label>
+                <select class="form-select" name="report_type">
+                    <option value="transaction_summary">Transaction Summary</option>
+                    <option value="daily_volume">Daily Volume</option>
+                    <option value="user_activity">User Activity</option>
+                    <option value="ledger_audit">Ledger Audit</option>
+                    <option value="revenue">Revenue Report</option>
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label">Date Range</label>
+                <select class="form-select" name="date_range">
+                    <option value="today">Today</option>
+                    <option value="yesterday">Yesterday</option>
+                    <option value="last_7_days" selected>Last 7 Days</option>
+                    <option value="last_30_days">Last 30 Days</option>
+                    <option value="this_month">This Month</option>
+                    <option value="last_month">Last Month</option>
+                    <option value="this_year">This Year</option>
+                    <option value="custom">Custom Range</option>
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label">Currency</label>
+                <select class="form-select" name="currency">
+                    <option value="ALL">All Currencies</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                    <option value="KES">KES</option>
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label">Status</label>
+                <select class="form-select" name="status">
+                    <option value="ALL">All Status</option>
+                    <option value="completed">Completed</option>
+                    <option value="pending">Pending</option>
+                    <option value="failed">Failed</option>
+                </select>
+            </div>
+            
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-filter me-2"></i> Apply Filters
+                </button>
+            </div>
+            
+            <!-- Custom Date Range (hidden by default) -->
+            <div id="customDateRange" class="row mt-3" style="display: none;">
+                <div class="col-md-3">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" class="form-control" name="start_date">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">End Date</label>
+                    <input type="date" class="form-control" name="end_date">
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card dashboard-card border-start border-primary border-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-2">Total Volume</h6>
+                        <h2 class="stat-number mb-0">${{ total_volume|floatformat:2 }}</h2>
+                    </div>
+                    <div class="card-icon bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <span class="text-success">
+                        <i class="bi bi-arrow-up"></i> 12.5% from last period
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card dashboard-card border-start border-success border-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-2">Transactions</h6>
+                        <h2 class="stat-number mb-0">{{ total_transactions }}</h2>
+                    </div>
+                    <div class="card-icon bg-success bg-opacity-10 text-success">
+                        <i class="bi bi-arrow-left-right"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <span class="text-success">
+                        <i class="bi bi-arrow-up"></i> 8.2% from last period
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card dashboard-card border-start border-info border-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-2">Avg. Transaction</h6>
+                        <h2 class="stat-number mb-0">${{ avg_transaction|floatformat:2 }}</h2>
+                    </div>
+                    <div class="card-icon bg-info bg-opacity-10 text-info">
+                        <i class="bi bi-graph-up"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <span class="text-warning">
+                        <i class="bi bi-dash"></i> 2.1% from last period
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card dashboard-card border-start border-warning border-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-2">Success Rate</h6>
+                        <h2 class="stat-number mb-0">{{ success_rate }}%</h2>
+                    </div>
+                    <div class="card-icon bg-warning bg-opacity-10 text-warning">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <span class="text-success">
+                        <i class="bi bi-arrow-up"></i> 3.4% from last period
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-graph-up me-2"></i> Transaction Volume Trend
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="volumeChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-pie-chart me-2"></i> Status Distribution
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Reports -->
+<div class="row">
+    <div class="col-12">
+        <div class="card dashboard-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-table me-2"></i> Transaction Details
+                </h5>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-primary" onclick="exportReport('csv')">
+                        <i class="bi bi-file-earmark-spreadsheet me-1"></i> CSV
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="exportReport('pdf')">
+                        <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="exportReport('excel')">
+                        <i class="bi bi-file-earmark-excel me-1"></i> Excel
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Transaction ID</th>
+                                <th>User</th>
+                                <th>Amount</th>
+                                <th>Currency</th>
+                                <th>Status</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transaction in recent_transactions %}
+                            <tr>
+                                <td>{{ transaction.date|date:"Y-m-d H:i" }}</td>
+                                <td>
+                                    <code>{{ transaction.id|truncatechars:12 }}</code>
+                                </td>
+                                <td>{{ transaction.user|truncatechars:15 }}</td>
+                                <td class="fw-bold">${{ transaction.amount|floatformat:2 }}</td>
+                                <td>{{ transaction.currency }}</td>
+                                <td>
+                                    <span class="badge bg-{{ transaction.status_color }}">
+                                        {{ transaction.status }}
+                                    </span>
+                                </td>
+                                <td>{{ transaction.type }}</td>
+                                <td class="text-muted">{{ transaction.description|truncatechars:30 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center py-4">
+                                    <div class="text-muted">
+                                        <i class="bi bi-table display-6 d-block mb-3"></i>
+                                        No transaction data available
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Additional Reports -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-currency-exchange me-2"></i> Currency Distribution
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="currencyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-clock-history me-2"></i> Hourly Activity
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="hourlyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Report Generation -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-gear me-2"></i> Generate Custom Report
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <div class="bg-primary bg-opacity-10 rounded-circle p-3 d-inline-block mb-3">
+                                    <i class="bi bi-file-earmark-text display-4 text-primary"></i>
+                                </div>
+                                <h5>Detailed Report</h5>
+                                <p class="text-muted small">Comprehensive transaction analysis with charts</p>
+                                <button class="btn btn-outline-primary w-100" onclick="generateReport('detailed')">
+                                    Generate
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <div class="bg-success bg-opacity-10 rounded-circle p-3 d-inline-block mb-3">
+                                    <i class="bi bi-shield-check display-4 text-success"></i>
+                                </div>
+                                <h5>Audit Report</h5>
+                                <p class="text-muted small">Ledger verification and compliance report</p>
+                                <button class="btn btn-outline-success w-100" onclick="generateReport('audit')">
+                                    Generate
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <div class="bg-warning bg-opacity-10 rounded-circle p-3 d-inline-block mb-3">
+                                    <i class="bi bi-graph-up display-4 text-warning"></i>
+                                </div>
+                                <h5>Performance Report</h5>
+                                <p class="text-muted small">System performance and metrics report</p>
+                                <button class="btn btn-outline-warning w-100" onclick="generateReport('performance')">
+                                    Generate
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Show/hide custom date range
+    document.querySelector('select[name="date_range"]').addEventListener('change', function() {
+        const customRange = document.getElementById('customDateRange');
+        if (this.value === 'custom') {
+            customRange.style.display = 'block';
+        } else {
+            customRange.style.display = 'none';
+        }
+    });
+    
+    // Chart configurations
+    document.addEventListener('DOMContentLoaded', function() {
+        // Volume Chart
+        const volumeCtx = document.getElementById('volumeChart');
+        if (volumeCtx) {
+            new Chart(volumeCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Transaction Volume ($)',
+                        data: [12000, 19000, 3000, 5000, 2000, 3000, 7000],
+                        borderColor: '#4361ee',
+                        backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Status Chart
+        const statusCtx = document.getElementById('statusChart');
+        if (statusCtx) {
+            new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Completed', 'Pending', 'Failed', 'Cancelled'],
+                    datasets: [{
+                        data: [65, 20, 10, 5],
+                        backgroundColor: [
+                            '#4cc9f0',
+                            '#ffc107',
+                            '#dc3545',
+                            '#6c757d'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Currency Chart
+        const currencyCtx = document.getElementById('currencyChart');
+        if (currencyCtx) {
+            new Chart(currencyCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['USD', 'EUR', 'GBP', 'KES', 'Other'],
+                    datasets: [{
+                        label: 'Transaction Count',
+                        data: [150, 80, 45, 120, 25],
+                        backgroundColor: '#4361ee',
+                        borderColor: '#4361ee',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Hourly Chart
+        const hourlyCtx = document.getElementById('hourlyChart');
+        if (hourlyCtx) {
+            new Chart(hourlyCtx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 24}, (_, i) => i + ':00'),
+                    datasets: [{
+                        label: 'Transactions per hour',
+                        data: [5, 8, 12, 18, 25, 30, 45, 60, 75, 80, 85, 90, 
+                               85, 80, 75, 70, 65, 60, 55, 50, 40, 30, 20, 10],
+                        borderColor: '#4cc9f0',
+                        backgroundColor: 'rgba(76, 201, 240, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                maxTicksLimit: 12
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+    
+    function exportReport(format) {
+        const filters = document.getElementById('reportFilters');
+        const formData = new FormData(filters);
+        const params = new URLSearchParams(formData);
+        
+        alert(`Generating ${format.toUpperCase()} report with current filters...\n\nReport will be available for download shortly.`);
+        
+        // Simulate API call
+        setTimeout(() => {
+            alert(`Report generated successfully!\n\nDownload link: /api/reports/export/${format}/?${params.toString()}`);
+        }, 2000);
+    }
+    
+    function generateReport(type) {
+        const reportTypes = {
+            'detailed': 'Detailed Transaction Report',
+            'audit': 'Audit Compliance Report',
+            'performance': 'Performance Metrics Report'
+        };
+        
+        alert(`Generating ${reportTypes[type]}...\n\nThis may take a few moments. You will be notified when the report is ready.`);
+        
+        // Simulate report generation
+        setTimeout(() => {
+            alert(`${reportTypes[type]} generated successfully!\n\nYou can download it from the Reports section.`);
+        }, 3000);
+    }
+</script>
+{% endblock %}

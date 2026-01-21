@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+
+{% block title %}New Transaction - PesaPal RDBMS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="bi bi-plus-circle me-2"></i> Create New Transaction
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="post" id="transactionForm">
+                    {% csrf_token %}
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="sender_account" class="form-label">
+                                    <i class="bi bi-person-up me-1"></i> Sender Account
+                                </label>
+                                <input type="text" class="form-control" id="sender_account" 
+                                       name="sender_account" required
+                                       placeholder="Enter sender account number">
+                                <div class="form-text">Account number of the sender</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="receiver_account" class="form-label">
+                                    <i class="bi bi-person-down me-1"></i> Receiver Account
+                                </label>
+                                <input type="text" class="form-control" id="receiver_account" 
+                                       name="receiver_account" required
+                                       placeholder="Enter receiver account number">
+                                <div class="form-text">Account number of the receiver</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="amount" class="form-label">
+                                    <i class="bi bi-cash-coin me-1"></i> Amount
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="amount" 
+                                           name="amount" step="0.01" min="0.01" required
+                                           placeholder="0.00">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="currency" class="form-label">
+                                    <i class="bi bi-globe me-1"></i> Currency
+                                </label>
+                                <select class="form-select" id="currency" name="currency">
+                                    <option value="USD" selected>USD</option>
+                                    <option value="EUR">EUR</option>
+                                    <option value="GBP">GBP</option>
+                                    <option value="KES">KES</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="description" class="form-label">
+                            <i class="bi bi-text-paragraph me-1"></i> Description
+                        </label>
+                        <textarea class="form-control" id="description" name="description" 
+                                  rows="3" placeholder="Enter transaction description..."></textarea>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="transaction_type" class="form-label">
+                                    <i class="bi bi-diagram-3 me-1"></i> Transaction Type
+                                </label>
+                                <select class="form-select" id="transaction_type" name="transaction_type">
+                                    <option value="transfer">Transfer</option>
+                                    <option value="payment">Payment</option>
+                                    <option value="deposit">Deposit</option>
+                                    <option value="withdrawal">Withdrawal</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="category" class="form-label">
+                                    <i class="bi bi-tag me-1"></i> Category
+                                </label>
+                                <select class="form-select" id="category" name="category">
+                                    <option value="general">General</option>
+                                    <option value="salary">Salary</option>
+                                    <option value="bill">Bill Payment</option>
+                                    <option value="shopping">Shopping</option>
+                                    <option value="investment">Investment</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        This transaction will be recorded in the immutable ledger for audit purposes.
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'transactions' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-2"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-2"></i> Create Transaction
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Transaction Preview -->
+    <div class="col-md-4">
+        <div class="card dashboard-card sticky-top" style="top: 20px;">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-eye me-2"></i> Transaction Preview
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <div class="bg-light rounded-circle p-4 d-inline-block mb-3">
+                        <i class="bi bi-arrow-left-right display-4 text-primary"></i>
+                    </div>
+                    <h5 id="previewAmount">$0.00</h5>
+                    <p class="text-muted" id="previewDescription">No description</p>
+                </div>
+                
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item d-flex justify-content-between">
+                        <span>Sender:</span>
+                        <strong id="previewSender">-</strong>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between">
+                        <span>Receiver:</span>
+                        <strong id="previewReceiver">-</strong>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between">
+                        <span>Type:</span>
+                        <span id="previewType" class="badge bg-info">Transfer</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between">
+                        <span>Currency:</span>
+                        <strong id="previewCurrency">USD</strong>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between">
+                        <span>Fee:</span>
+                        <strong id="previewFee">$1.50</strong>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between bg-light">
+                        <span class="fw-bold">Total:</span>
+                        <strong class="text-primary" id="previewTotal">$1.50</strong>
+                    </div>
+                </div>
+                
+                <div class="alert alert-success mt-4">
+                    <div class="d-flex">
+                        <i class="bi bi-shield-check me-2"></i>
+                        <div>
+                            <small>This transaction will be:</small>
+                            <div class="fw-bold">✓ Immutably recorded in ledger</div>
+                            <div class="fw-bold">✓ Cryptographically secured</div>
+                            <div class="fw-bold">✓ Audit-ready</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Update preview in real-time
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('transactionForm');
+        const previewAmount = document.getElementById('previewAmount');
+        const previewDescription = document.getElementById('previewDescription');
+        const previewSender = document.getElementById('previewSender');
+        const previewReceiver = document.getElementById('previewReceiver');
+        const previewType = document.getElementById('previewType');
+        const previewCurrency = document.getElementById('previewCurrency');
+        const previewTotal = document.getElementById('previewTotal');
+        
+        // Calculate fee (2% of amount with $1.50 minimum)
+        function calculateFee(amount) {
+            const fee = Math.max(amount * 0.02, 1.50);
+            return parseFloat(fee.toFixed(2));
+        }
+        
+        // Update total
+        function updateTotal(amount) {
+            const fee = calculateFee(amount);
+            const total = amount + fee;
+            document.getElementById('previewFee').textContent = '$' + fee.toFixed(2);
+            previewTotal.textContent = '$' + total.toFixed(2);
+        }
+        
+        // Listen to form changes
+        form.addEventListener('input', function(e) {
+            switch(e.target.id) {
+                case 'amount':
+                    const amount = parseFloat(e.target.value) || 0;
+                    previewAmount.textContent = '$' + amount.toFixed(2);
+                    updateTotal(amount);
+                    break;
+                case 'description':
+                    previewDescription.textContent = e.target.value || 'No description';
+                    break;
+                case 'sender_account':
+                    previewSender.textContent = e.target.value || '-';
+                    break;
+                case 'receiver_account':
+                    previewReceiver.textContent = e.target.value || '-';
+                    break;
+                case 'transaction_type':
+                    previewType.textContent = e.target.value.charAt(0).toUpperCase() + 
+                                             e.target.value.slice(1);
+                    break;
+                case 'currency':
+                    previewCurrency.textContent = e.target.value;
+                    break;
+            }
+        });
+        
+        // Initialize with default values
+        const initialAmount = parseFloat(document.getElementById('amount').value) || 0;
+        previewAmount.textContent = '$' + initialAmount.toFixed(2);
+        updateTotal(initialAmount);
+        previewSender.textContent = document.getElementById('sender_account').value || '-';
+        previewReceiver.textContent = document.getElementById('receiver_account').value || '-';
+        previewDescription.textContent = document.getElementById('description').value || 'No description';
+    });
+</script>
+{% endblock %}

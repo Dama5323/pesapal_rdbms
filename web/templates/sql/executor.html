@@ -1,0 +1,334 @@
+{% extends 'base.html' %}
+
+{% block title %}SQL Executor - PesaPal RDBMS{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="h2 mb-3">SQL Executor</h1>
+        <p class="text-muted mb-4">Execute SQL queries against your RDBMS</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card dashboard-card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-code-square me-2"></i> SQL Query Editor
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="sqlForm" method="post" action="{% url 'sql_executor' %}">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="sql_query" class="form-label">SQL Query</label>
+                        <textarea class="form-control" id="sql_query" name="sql_query" 
+                                  rows="8" placeholder="SELECT * FROM transactions WHERE amount > 1000;"
+                                  style="font-family: 'Courier New', monospace;"></textarea>
+                        <div class="form-text">
+                            Enter your SQL query. Only SELECT, INSERT, UPDATE, DELETE queries are allowed.
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="loadSampleQuery('select')">
+                                <i class="bi bi-eye me-1"></i> Sample SELECT
+                            </button>
+                            <button type="button" class="btn btn-outline-success btn-sm" onclick="loadSampleQuery('insert')">
+                                <i class="bi bi-plus-circle me-1"></i> Sample INSERT
+                            </button>
+                            <button type="button" class="btn btn-outline-warning btn-sm" onclick="loadSampleQuery('update')">
+                                <i class="bi bi-pencil-square me-1"></i> Sample UPDATE
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="loadSampleQuery('delete')">
+                                <i class="bi bi-trash me-1"></i> Sample DELETE
+                            </button>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-play-circle me-2"></i> Execute Query
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        {% if result %}
+        <div class="card dashboard-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-table me-2"></i> Query Results
+                </h5>
+                <span class="badge bg-success">
+                    {{ result.rows_affected }} row(s) affected
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Query:</strong> {{ result.query }}
+                </div>
+                
+                {% if result.data %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                {% for column in result.columns %}
+                                <th>{{ column }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in result.data %}
+                            <tr>
+                                {% for cell in row %}
+                                <td>{{ cell }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-success">
+                    <i class="bi bi-check-circle me-2"></i>
+                    Query executed successfully. {{ result.rows_affected }} row(s) affected.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card dashboard-card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-info-circle me-2"></i> Database Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item d-flex justify-content-between">
+                        <span>Database Type:</span>
+                        <strong>PostgreSQL</strong>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between">
+                        <span>Connection:</span>
+                        <span class="badge bg-success">Connected</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between">
+                        <span>Last Query:</span>
+                        <strong id="lastQueryTime">-</strong>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between">
+                        <span>Total Queries:</span>
+                        <strong id="totalQueries">0</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightbulb me-2"></i> Quick Tips
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <h6 class="alert-heading">
+                        <i class="bi bi-exclamation-triangle me-2"></i> Security Warning
+                    </h6>
+                    <p class="mb-2 small">Only execute queries from trusted sources. This tool has direct database access.</p>
+                </div>
+                
+                <h6 class="mb-3">Common Queries:</h6>
+                <ul class="list-unstyled small">
+                    <li class="mb-2">
+                        <code class="text-primary">SELECT * FROM users;</code>
+                        <br><small>List all users</small>
+                    </li>
+                    <li class="mb-2">
+                        <code class="text-primary">SELECT COUNT(*) FROM transactions;</code>
+                        <br><small>Count total transactions</small>
+                    </li>
+                    <li class="mb-2">
+                        <code class="text-primary">SELECT SUM(amount) FROM transactions;</code>
+                        <br><small>Sum of all transaction amounts</small>
+                    </li>
+                    <li>
+                        <code class="text-primary">DESCRIBE table_name;</code>
+                        <br><small>Show table structure</small>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Update last query time
+        function updateLastQueryTime() {
+            const now = new Date();
+            document.getElementById('lastQueryTime').textContent = 
+                now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }
+        
+        // Initialize
+        updateLastQueryTime();
+        
+        // Auto-update every minute
+        setInterval(updateLastQueryTime, 60000);
+        
+        // Focus on textarea
+        const textarea = document.getElementById('sql_query');
+        if (textarea) {
+            textarea.focus();
+            
+            // Add Tab key support
+            textarea.addEventListener('keydown', function(e) {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const start = this.selectionStart;
+                    const end = this.selectionEnd;
+                    
+                    // Insert tab character
+                    this.value = this.value.substring(0, start) + 
+                                '    ' + 
+                                this.value.substring(end);
+                    
+                    // Move cursor position
+                    this.selectionStart = this.selectionEnd = start + 4;
+                }
+            });
+        }
+    });
+    
+    // Sample queries
+    function loadSampleQuery(type) {
+        const textarea = document.getElementById('sql_query');
+        if (!textarea) return;
+        
+        const queries = {
+            select: `SELECT 
+    t.transaction_id,
+    t.amount,
+    t.currency,
+    t.status,
+    t.created_at,
+    u.email as user_email
+FROM transactions t
+JOIN users u ON t.user_id = u.id
+WHERE t.status = 'completed'
+ORDER BY t.created_at DESC
+LIMIT 10;`,
+            
+            insert: `INSERT INTO transactions (
+    transaction_id,
+    user_id,
+    amount,
+    currency,
+    description,
+    status
+) VALUES (
+    'TXN_' || gen_random_uuid(),
+    'user_id_here',
+    1500.00,
+    'USD',
+    'Sample transaction',
+    'pending'
+);`,
+            
+            update: `UPDATE transactions 
+SET status = 'completed',
+    updated_at = NOW()
+WHERE transaction_id = 'TXN_123456'
+AND status = 'pending';`,
+            
+            delete: `DELETE FROM ledger_audit 
+WHERE audit_date < NOW() - INTERVAL '90 days'
+AND status = 'verified';`
+        };
+        
+        textarea.value = queries[type] || '';
+        textarea.focus();
+        
+        // Show notification
+        showNotification(`Loaded ${type.toUpperCase()} sample query`, 'info');
+    }
+    
+    function showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        notification.style.cssText = 'top: 20px; right: 20px; z-index: 1050; min-width: 300px;';
+        notification.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Auto remove after 3 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 3000);
+    }
+    
+    // Form submission with AJAX
+    document.getElementById('sqlForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const form = this;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        // Show loading
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i> Executing...';
+        submitBtn.disabled = true;
+        
+        // Submit via AJAX
+        fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Update query counter
+            const totalQueries = document.getElementById('totalQueries');
+            if (totalQueries) {
+                totalQueries.textContent = parseInt(totalQueries.textContent) + 1;
+            }
+            
+            // Show result
+            showNotification('Query executed successfully!', 'success');
+            
+            // Reload page to show results
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        })
+        .catch(error => {
+            showNotification('Error executing query: ' + error.message, 'danger');
+        })
+        .finally(() => {
+            // Reset button
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        });
+    });
+</script>
+{% endblock %}
