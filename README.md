@@ -184,32 +184,36 @@ Visit http://localhost:8000 to see:
 
 ### Endpoints
 
-### 🔑 Authentication
+###  Authentication
 | Endpoint | Method | Description | Auth Required |
 |----------|--------|-------------|---------------|
 | `/api/users/login/` | `POST` | User login with email/password | ❌ |
 | `/api/users/logout/` | `POST` | User logout | ✅ |
 | `/api/users/current/` | `GET` | Get current user profile | ✅ |
 
-### 👥 User Management
+###  User Management
 | Endpoint | Method | Description | Auth Required |
+|----------|--------|-------------|---------------|
 | `/api/users/` | `GET` | List all users | ✅ (Admin) |
 | `/api/users/<uuid:user_id>/` | `GET` | Get user details | ✅ |
 | `/api/users/<uuid:user_id>/kyc/` | `PUT` | Update KYC status | ✅ (Admin) |
 | `/api/users/<uuid:user_id>/accounts/` | `GET` | Get user's accounts | ✅ |
 
-### 💰 Financial Operations
+###  Financial Operations
 | Endpoint | Method | Description | Auth Required |
+|----------|--------|-------------|---------------|
 | `/api/transactions/create/` | `POST` | Create & record transaction | ✅ |
 | `/api/transactions/<transaction_id>/audit/` | `GET` | Get cryptographic audit trail | ✅ |
 | `/api/ledgers/verify/` | `GET` | Verify ledger chain integrity | ✅ |
 | `/api/financial/report/` | `GET` | Generate financial reports | ✅ (Admin) |
 
-### 🛠️ System Operations
+### System Operations
 | Endpoint | Method | Description | Auth Required |
+|----------|--------|-------------|---------------|
 | `/health/` | `GET` | System health check | ❌ |
 | `/api/docs/` | `GET` | Interactive API documentation | ❌ |
 | `/rdbms-admin/` | `GET` | Custom RDBMS admin interface | ✅ (Admin) |
+
 
 ### Live Examples
 For complete API documentation with interactive examples, visit:  
