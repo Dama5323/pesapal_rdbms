@@ -1,0 +1,348 @@
+<!-- web/templates/auth/profile.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - PesaPal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .profile-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        .profile-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .profile-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .profile-content {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 30px;
+            padding: 40px;
+        }
+        
+        .sidebar {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .user-avatar {
+            width: 120px;
+            height: 120px;
+            background: #667eea;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .kyc-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        .kyc-verified {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .kyc-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .main-content {
+            display: grid;
+            gap: 30px;
+        }
+        
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        
+        .info-item {
+            margin-bottom: 15px;
+        }
+        
+        .info-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+        
+        .info-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .balance-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+        }
+        
+        .balance-amount {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .nav-links {
+            margin-top: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .nav-link {
+            padding: 12px;
+            text-decoration: none;
+            color: #333;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .transaction-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .transaction-item {
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .transaction-item:last-child {
+            border-bottom: none;
+        }
+        
+        .transaction-amount {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .transaction-amount.positive {
+            color: #28a745;
+        }
+        
+        .transaction-amount.negative {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="profile-container">
+        <!-- Header -->
+        <div class="profile-header">
+            <h1>👤 My Profile</h1>
+            <p>Welcome back to your PesaPal dashboard</p>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="profile-content">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="user-avatar">
+                    {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+                </div>
+                
+                <h2>{{ user.first_name }} {{ user.last_name }}</h2>
+                <p class="user-email">{{ user.email }}</p>
+                
+                <div class="kyc-badge {% if user.kyc_status == 'VERIFIED' %}kyc-verified{% else %}kyc-pending{% endif %}">
+                    KYC: {{ user.kyc_status }}
+                </div>
+                
+                <div class="nav-links">
+                    <a href="/dashboard/" class="nav-link">📊 Dashboard</a>
+                    <a href="/transactions/" class="nav-link">💸 Transactions</a>
+                    <a href="/accounts/" class="nav-link">🏦 My Accounts</a>
+                    <a href="/settings/" class="nav-link">⚙️ Settings</a>
+                    <a href="/logout/" class="nav-link" style="color: #dc3545;">🚪 Logout</a>
+                </div>
+            </div>
+            
+            <!-- Main Content Area -->
+            <div class="main-content">
+                <!-- Account Summary -->
+                <div class="card">
+                    <h2>💰 Account Summary</h2>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">Total Balance</div>
+                            <div class="info-value">KES {{ total_balance|default:"0.00" }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Available Balance</div>
+                            <div class="info-value">KES {{ available_balance|default:"0.00" }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Daily Limit</div>
+                            <div class="info-value">KES {{ user.daily_limit|default:"100,000.00" }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Monthly Limit</div>
+                            <div class="info-value">KES {{ user.monthly_limit|default:"1,000,000.00" }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Personal Information -->
+                <div class="card">
+                    <h2>📝 Personal Information</h2>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">Full Name</div>
+                            <div class="info-value">{{ user.first_name }} {{ user.last_name }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Email Address</div>
+                            <div class="info-value">{{ user.email }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Phone Number</div>
+                            <div class="info-value">{{ user.phone_number|default:"Not provided" }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">National ID</div>
+                            <div class="info-value">{{ user.national_id|default:"Not provided" }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Date of Birth</div>
+                            <div class="info-value">{{ user.date_of_birth|default:"Not provided" }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Country</div>
+                            <div class="info-value">{{ user.country|default:"Kenya" }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Transactions -->
+                <div class="card">
+                    <h2>🔄 Recent Transactions</h2>
+                    <div class="transaction-list">
+                        {% if recent_transactions %}
+                            {% for transaction in recent_transactions %}
+                            <div class="transaction-item">
+                                <div>
+                                    <strong>{{ transaction.description|default:"Payment" }}</strong><br>
+                                    <small>{{ transaction.created_at|date:"M d, Y H:i" }}</small>
+                                </div>
+                                <div class="transaction-amount {% if transaction.amount > 0 %}positive{% else %}negative{% endif %}">
+                                    KES {{ transaction.amount|floatformat:2 }}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p>No recent transactions found.</p>
+                        {% endif %}
+                    </div>
+                    <a href="/transactions/" class="btn" style="margin-top: 20px;">View All Transactions</a>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="card">
+                    <h2>⚡ Quick Actions</h2>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                        <a href="/transactions/create/" class="btn">💸 Send Money</a>
+                        <a href="/deposit/" class="btn">💰 Deposit Funds</a>
+                        <a href="/withdraw/" class="btn">🏧 Withdraw</a>
+                        <a href="/bill-payments/" class="btn">🧾 Pay Bills</a>
+                        <a href="/airtime/" class="btn">📱 Buy Airtime</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

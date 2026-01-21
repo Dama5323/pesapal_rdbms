@@ -14,113 +14,100 @@
 
 **Live URL:** [https://pesapal-rdbms-gm67.onrender.com](https://pesapal-rdbms-gm67.onrender.com)
 
-PesaPal RDBMS is a Django-based financial application that solves the critical problem of data integrity and auditability in payment systems. It goes beyond a basic CRUD app by implementing core financial principles: an immutable cryptographic ledger for tamper-proof records, ACID-compliant PostgreSQL transactions, and a secure custom user model. It's a demonstration of how to build a reliable, auditable data layer for real-world financial operations.
+**PesaPal RDBMS** is a **production-ready financial application** that solves critical problems of **data integrity, auditability, and regulatory compliance** in payment systems. Built with Django and featuring a custom immutable ledger, this system implements **core banking principles** with ACID-compliant transactions and secure financial workflows.
 
-## 🎯 The Challenge I Solve
+### 🎯 Key Innovation: Dual-Layer Architecture
 
-Building financial applications requires **absolute data reliability**. A single misplaced decimal or failed transaction can mean real financial loss. Traditional databases don't guarantee the ACID properties needed for payments.
+The system's core innovation is its **dual-layer data architecture**:
+- **Transactional Database**: PostgreSQL for high-performance operations
+- **Immutable Ledger**: Custom cryptographic ledger for audit-proof records
 
-### **My Solution**
-PesaPal RDBMS implements:
-- **Atomic transactions** - Money transfers succeed completely or fail completely
-- **Immutable audit logs** - Every financial action is permanently recorded
-- **Referential integrity** - No orphaned transactions or broken relationships
-- **Real-time consistency** - Balances are always accurate, never eventually consistent
-- **Complex Queries**: Enables powerful fraud detection and reporting
 
-### **Technology Stack:**
-- **Backend:** Django 6.0 + Django REST Framework
-- **Database:** PostgreSQL (ACID-compliant RDBMS)
-- **Deployment:** Render.com
-- **Web Server:** Gunicorn + WhiteNoise
-- **Authentication:** Django Session + REST Framework
+### Key Components
+
+| Component | Purpose | Location |
+|-----------|---------|----------|
+| **`ledger.py`** | Core immutable ledger logic (append, verify, hash chain) | `/rdbms/ledger.py` |
+| **`LedgerTrackedModel`** | Django mixin for models needing ledger audit trails | Defined in `transactions/models.py` |
+| **`services.py`** | Service layer coordinating ledger writes during transactions | `/services.py` |
+| **`Transaction.save()`** | Overridden to auto-record `COMPLETED` transactions to ledger | `transactions/models.py` |
+| **`Account.save()`** | Overridden to auto-record balance changes to ledger | `users/models.py` |
+
+
+## ✨ Core Features
+
+### 🔐 **Immutable Ledger System**
+- **Cryptographic Hash Chains**: Every transaction creates an unbreakable link to previous records
+- **Tamper-Evident Design**: Any modification invalidates subsequent hashes
+- **Regulatory Compliance**: Meets financial audit requirements (KYC, AML)
+- **Dual-Phase Recording**: All financial events stored in both database and ledger
+
+### 💳 **Financial Transaction Engine**
+- **ACID-Compliant Processing**: Atomic transfers with rollback capability
+- **Multi-Currency Support**: KES, USD, EUR, GBP with real-time balance tracking
+- **Transaction Types**: P2P transfers, merchant payments, bill payments, airtime
+- **Fee & Tax Calculation**: Automated financial computations
+
+### 👤 **Bank-Grade User Management**
+- **Custom User Model**: Extended `AbstractUser` with email as username[citation:8]
+- **KYC Verification**: Document workflow (PENDING → VERIFIED → REJECTED)
+- **Financial Limits**: Daily/monthly transaction caps
+- **Profile Management**: Employment, address, and preference tracking
+### Data Flow Example: Money Transfer
+
+```python
+ 1. User initiates transfer (Transaction created with status='PENDING')
+transaction = Transaction.objects.create(...)
+
+ 2. System processes and completes transfer
+transaction.status = 'COMPLETED'
+transaction.save()  # Triggers ledger recording via save() override
+
+3. Behind the scenes in save() method:
+      - Generates ledger data via to_ledger_format()
+      -  Calls rdbms_service.record_transaction()
+      - Updates transaction.ledger_event_id and ledger_hash
+      - Updates account balances (which also record to ledger)
+```
 
 ![PesaPal RDBMS ERD](./pesapal_erd.drawio.png)
 
-## 📋 Table of Contents
-- [Features](#features)
-- [Architecture](#architecture)
-- [Quick Start](#quick-start)
-- [Documentation](#documentation)
-- [API Reference](#api-reference)
-- [Database Design](#database-design)
-- [Testing](#testing)
-- [Contributing](#contributing)
-- [License](#license)
 
 --- 
-
-## Design Decisions
-
-- **Storage**: JSON chosen for readability and ease of debugging over binary formats
-- **Indexing**: Dictionary-based indexes for O(1) lookups on primary and unique keys
-- **Parser**: Regex-based SQL parsing to keep scope minimal and transparent
-- **Web Integration**: Django used strictly as a client to the custom RDBMS, not as a persistence layer
-
-## Features
-
-### **Custom RDBMS Engine**
-
-- ✅ **Schema Management**: Create tables with various data types (INTEGER, TEXT, FLOAT, BOOLEAN, DATETIME)
-- ✅ **Data Integrity**: Enforce primary key, unique, and foreign key constraints
-- ✅ **Query Operations**: Full CRUD support with optimized indexing
-- ✅ **Advanced Queries**: JOIN operations (INNER, LEFT, RIGHT) with proper relationship handling
-- ✅ **Persistence**: JSON file storage with automatic backup/restore
-- ✅ **SQL Interface**: REPL with SQL-like syntax parser
-
-### 🌐 **Web Application**
-- ✅ **RESTful API**: Fully documented endpoints with OpenAPI/Swagger
-- ✅ **Web Dashboard**: Beautiful interface for database management
-- ✅ **User Management**: Complete CRUD operations with authentication
-- ✅ **Task System**: Demonstrate JOIN operations between users and tasks
-- ✅ **SQL Executor**: Safe SQL query interface with syntax highlighting
-- ✅ **Admin Interface**: Django admin with custom styling
-
----
 
 ## Architecture
 ```
 pesapal_rdbms/
-├── rdbms/ # Custom RDBMS Engine (No external dependencies!)
-│ ├── init.py
-│ ├── database.py # Main Database class
-│ ├── table.py # Table implementation with CRUD
-│ ├── parser.py # SQL parser (regex-based)
-│ ├── repl.py # Interactive SQL REPL
-│ └── storage.py # JSON persistence layer
-├── web/ # Django Web Application
-│ ├── manage.py
-│ ├── web/ # Django project settings
-│ │ ├── init.py
-│ │ ├── settings.py
-│ │ ├── urls.py
-│ │ ├── asgi.py
-│ │ └── wsgi.py
-│ └── tasks/ # Django app demonstrating RDBMS
-│ ├── init.py
-│ ├── views.py # Web views
-│ ├── services.py # Bridge to our custom RDBMS
-│ ├── urls.py # URL routing
-│ └── templates/ # HTML templates
-├── users/ # Users Django app (optional)
-├── requirements.txt # Python dependencies
-└── README.md # This file
+├── web/                          # Django Web Application
+│   ├── settings.py              # Project configuration
+│   ├── urls.py                  # URL routing
+│   ├── views.py                 # Request handlers
+│   ├── rdbms_admin.py          # Custom admin interface for RDBMS
+│   └── templates/               # HTML templates
+├── users/                       # User Management App (Django models)
+│   ├── models.py               # Custom User, Account & Profile models
+│   ├── views.py                # User CRUD operations
+│   └── admin.py                # Django admin customization
+├── transactions/                # Financial Transactions App
+│   ├── models.py               # Transaction, Invoice & AuditLog models
+│   └── api/                    # REST API endpoints
+├── rdbms/                       # Custom RDBMS Engine + Ledger System
+│   ├── __init__.py             # Package initialization
+│   ├── database.py             # Main Database class with transaction management
+│   ├── table.py                # Table implementation with indexing & constraints
+│   ├── parser.py               # SQL-like command parser
+│   ├── ledger.py               # Core immutable ledger logic
+│   ├── repl.py                 # Interactive SQL shell
+│   └── storage.py              # JSON persistence layer
+├── services.py                  # Orchestration layer (connects Django to RDBMS)
+├── tasks/                       # Background job processing
+├── data/                        # Storage for RDBMS data files
+├── venv/                        # Virtual environment
+├── manage.py                    # Django management
+├── requirements.txt            # Dependencies
+├── db.sqlite3                  # Django database (development)
+└── README.md                   # This file
 ```
-
-## Core Components
-
-### **RDBMS Engine** (`rdbms/`)
-- `database.py` - Main database class with transaction management
-- `table.py` - Table implementation with indexing and constraints  
-- `parser.py` - SQL-like command parser
-- `storage.py` - JSON persistence with atomic writes
-- `repl.py` - Interactive SQL shell
-
-### **Web Application** (`web/`)
-- Django REST API with full CRUD operations
-- Service layer abstraction for RDBMS integration
-- Real-time monitoring and statistics
-- SQL execution interface
 
 ---
 
@@ -195,36 +182,42 @@ Visit http://localhost:8000 to see:
 - API endpoints at /api/users/ and /api/tasks/
 
 
-### Authentication
-Currently using session-based authentication via Django.
-
 ### Endpoints
 
-#### Users API (`/api/users/`)
-| Method | Endpoint | Description | Example Request |
-|--------|----------|-------------|-----------------|
-| GET | `/api/users/` | List all users | `curl -X GET http://localhost:8000/api/users/` |
-| POST | `/api/users/` | Create new user | `curl -X POST -H "Content-Type: application/json" -d '{"username": "john", "email": "john@example.com"}' http://localhost:8000/api/users/` |
-| GET | `/api/users/{id}/` | Get user details | `curl -X GET http://localhost:8000/api/users/1/` |
-| PUT | `/api/users/{id}/` | Update user | `curl -X PUT -H "Content-Type: application/json" -d '{"email": "new@example.com"}' http://localhost:8000/api/users/1/` |
-| DELETE | `/api/users/{id}/` | Delete user | `curl -X DELETE http://localhost:8000/api/users/1/` |
+### 🔑 Authentication
+| Endpoint | Method | Description | Auth Required |
+|----------|--------|-------------|---------------|
+| `/api/users/login/` | `POST` | User login with email/password | ❌ |
+| `/api/users/logout/` | `POST` | User logout | ✅ |
+| `/api/users/current/` | `GET` | Get current user profile | ✅ |
 
-#### Tasks API (`/api/tasks/`)
-| Method | Endpoint | Description | Example Response |
-|--------|----------|-------------|------------------|
-| GET | `/api/tasks/` | List all tasks with user info (JOIN) | `{"tasks": [{"id": 1, "title": "Task 1", "user": {"id": 1, "username": "john"}}]}` |
-| POST | `/api/tasks/` | Create new task | Requires `title` and `user_id` |
+### 👥 User Management
+| `/api/users/` | `GET` | List all users | ✅ (Admin) |
+| `/api/users/<uuid:user_id>/` | `GET` | Get user details | ✅ |
+| `/api/users/<uuid:user_id>/kyc/` | `PUT` | Update KYC status | ✅ (Admin) |
+| `/api/users/<uuid:user_id>/accounts/` | `GET` | Get user's accounts | ✅ |
 
-#### SQL Executor (`/api/tasks/sql/`)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/tasks/sql/` | Execute raw SQL queries |
+### 💰 Financial Operations
+| `/api/transactions/create/` | `POST` | Create & record transaction | ✅ |
+| `/api/transactions/<transaction_id>/audit/` | `GET` | Get cryptographic audit trail | ✅ |
+| `/api/ledgers/verify/` | `GET` | Verify ledger chain integrity | ✅ |
+| `/api/financial/report/` | `GET` | Generate financial reports | ✅ (Admin) |
 
-**Example:**
+### 🛠️ System Operations
+| `/health/` | `GET` | System health check | ❌ |
+| `/api/docs/` | `GET` | Interactive API documentation | ❌ |
+| `/rdbms-admin/` | `GET` | Custom RDBMS admin interface | ✅ (Admin) |
+
+### Live Examples
+For complete API documentation with interactive examples, visit:  
+**https://pesapal-rdbms-gm67.onrender.com/api/docs/**
+
+### Authentication
+All protected endpoints require a bearer token. Get your token:
 ```bash
-curl -X POST -H "Content-Type: application/json" \
-  -d '{"query": "SELECT * FROM users JOIN tasks ON users.id = tasks.user_id"}' \
-  http://localhost:8000/api/tasks/sql/
+curl -X POST https://pesapal-rdbms-gm67.onrender.com/login/ \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "yourpassword"}'
   ```
 
 ### Demonstration of Requirements
@@ -280,8 +273,6 @@ Full CRUD application using the custom RDBMS
 
 ## Database Design
 
-### Entity Relationship Diagram
-![ERD Diagram](docs/erd.png)
 
 ### Schema Definition
 
@@ -354,13 +345,15 @@ python manage.py runserver
 
 ## Authors
 
-- **Your Name** - [GitHub](https://github.com/Dama5323) - [LinkedIn](https://linkedin.com/in/dama5323)
+- **Damaris C hege Backend Developer and AWS Solutions Architect** - [GitHub](https://github.com/Dama5323) - [LinkedIn](https://linkedin.com/in/dama5323)
 
 ## Acknowledgments
 
-- ALX Software Engineering Program
-- Inspired by SQLite and minimal database implementations
-- Thanks to all contributors and testers
+- ALX Software Engineering Program for guidance
+
+- Render.com for hosting infrastructure
+
+- Django community for excellent documentation
 
 ## License
 
