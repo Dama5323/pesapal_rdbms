@@ -35,7 +35,7 @@ PesaPal RDBMS implements:
 - **Web Server:** Gunicorn + WhiteNoise
 - **Authentication:** Django Session + REST Framework
 
-![PesaPal RDBMS ERD](./pesapal_erd.png)
+![PesaPal RDBMS ERD](./pesapal_erd.drawio.png)
 
 ## 📋 Table of Contents
 - [Features](#features)
