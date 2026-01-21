@@ -1,17 +1,20 @@
 # PesaPal RDBMS Challenge
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
 ![Django](https://img.shields.io/badge/Django-4.2-green)
 ![REST-API](https://img.shields.io/badge/REST-API-✓-success)
 ![Docs](https://img.shields.io/badge/Docs-Swagger-orange)
+![Authentication](https://img.shields.io/badge/Auth-Custom_User_Model-important)
 ![Tested](https://img.shields.io/badge/Tested-Postman-blueviolet)
 ![Render](https://img.shields.io/badge/deployed_on-render-5363e6)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
+[👉 Try User Registration](https://pesapal-rdbms-gm67.onrender.com/register/)
 
 ## Live Demo
 
 **Live URL:** [https://pesapal-rdbms-gm67.onrender.com](https://pesapal-rdbms-gm67.onrender.com)
 
-PesaPal RDBMS is a production-ready financial database system that solves the critical problem of data integrity in payment processing. Unlike generic CRUD apps, it's built with ACID compliance at its core, ensuring that financial transactions are 100% reliable, fully auditable, and compliant with financial regulations. It's not just a Django app—it's a financial-grade data layer ready for real-world payment volumes
+PesaPal RDBMS is a Django-based financial application that solves the critical problem of data integrity and auditability in payment systems. It goes beyond a basic CRUD app by implementing core financial principles: an immutable cryptographic ledger for tamper-proof records, ACID-compliant PostgreSQL transactions, and a secure custom user model. It's a demonstration of how to build a reliable, auditable data layer for real-world financial operations.
 
 ## 🎯 The Challenge I Solve
 
