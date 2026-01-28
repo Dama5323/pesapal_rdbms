@@ -1,4 +1,3 @@
-# services/rdbms_service.py - CLEAN VERSION
 import sys
 import os
 import json
